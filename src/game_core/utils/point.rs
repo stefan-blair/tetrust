@@ -6,6 +6,10 @@ impl Point {
         Self(x, y)
     }
 
+    pub fn unit_y(y: i32) -> Self {
+        Self(0, y)
+    }
+
     pub fn x(self) -> i32 {
         self.0
     }

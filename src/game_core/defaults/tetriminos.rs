@@ -1,5 +1,5 @@
-use crate::game::point::{PartialPoint, Point};
-use crate::game::tetriminos;
+use crate::game_core::utils::point::{PartialPoint, Point};
+use crate::game_core::tetriminos;
 
 
 type WallKickTable = [[&'static [Point]; 2]; 4];
@@ -12,7 +12,7 @@ pub const I_TETRIMINO: TetriminoData = (
         PartialPoint(0.5, 0.5),
         PartialPoint(1.5, 0.5),
     ],
-    Point(-2, 2),
+    Point(-2, 1),
     I_WALL_KICKS
 );
 
@@ -34,7 +34,7 @@ pub const O_TETRIMINO: TetriminoData = (
         PartialPoint(-0.5, -0.5),
         PartialPoint(0.5, -0.5),
     ],
-    Point(-2, 1),
+    Point(-2, 0),
     OTHER_WALL_KICKS
 );
 

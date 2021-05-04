@@ -1,5 +1,5 @@
-use crate::game::point::{PartialPoint, Point};
-use crate::game::orientations::{Orientation, Direction};
+use crate::game_core::utils::point::{PartialPoint, Point};
+use crate::game_core::utils::orientations::{Orientation, Direction};
 
 
 pub struct Tetrimino {
@@ -49,6 +49,10 @@ impl Tetrimino {
 
     pub fn get_wall_kicks(&self, orientation: Orientation, direction: Direction) -> &[Point] {
         self.wall_kicks[orientation as usize][direction as usize]
+    }
+
+    pub fn get_bounding_box(&self) -> Point {
+        self.bounding_box
     }
 }
 
@@ -109,4 +113,8 @@ impl<'a> ActiveTetrimino<'a> {
     pub fn get_tetrimino(&self) -> &'a Tetrimino {
         self.tetrimino
     }
+
+    // pub fn get_bounding_box(&self) -> Point {
+    //     self.tetrimino.bounding_box + self.
+    // }
 }
