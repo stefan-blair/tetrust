@@ -3,12 +3,11 @@ use rand::RngCore;
 
 pub mod board;
 pub mod defaults;
-pub mod utils;
 pub mod tetriminos;
+pub mod utils;
 
-use utils::point::Point;
 use utils::orientations::Direction;
-
+use utils::point::Point;
 
 pub struct GameCore<'a> {
     tetrimino_types: &'a Vec<tetriminos::Tetrimino>,
@@ -65,18 +64,27 @@ impl<'a> GameCore<'a> {
         &self.ghost_tetrimino
     }
 
+    pub fn get_next_tetrimino(&self, index: usize) -> &tetriminos::Tetrimino {
+        &self.tetrimino_queue[(self.next_tetrimino_index + index) % self.tetrimino_queue.len()]
+    }
+
+    pub fn get_tetrimino_types(&self) -> &[tetriminos::Tetrimino] {
+        &self.tetrimino_types
+    }
+
     pub fn set_active_tetrimino(&mut self, active_tetrimino: tetriminos::ActiveTetrimino<'a>) {
         self.active_tetrimino = active_tetrimino;
         self.active_tetrimino_updated()
     }
 
     pub fn next_tetrimino(&mut self) {
-        self.set_active_tetrimino(self.tetrimino_queue[self.next_tetrimino_index]
-            .active_instance()
-            .with_position(self.board.get_spawn_point()));
-        self.tetrimino_queue[self.next_tetrimino_index] = self.tetrimino_types
-            .choose(self.rng)
-            .unwrap();
+        self.set_active_tetrimino(
+            self.tetrimino_queue[self.next_tetrimino_index]
+                .active_instance()
+                .with_position(self.board.get_spawn_point()),
+        );
+        self.tetrimino_queue[self.next_tetrimino_index] =
+            self.tetrimino_types.choose(self.rng).unwrap();
         self.next_tetrimino_index = (self.next_tetrimino_index + 1) % self.tetrimino_queue.len();
     }
 
@@ -88,23 +96,26 @@ impl<'a> GameCore<'a> {
     pub fn hold(&mut self) {
         let held_tetrimino = self.held_tetrimino;
         self.held_tetrimino = Some(self.active_tetrimino.get_tetrimino());
-        
+
         match held_tetrimino {
             Some(held_tetrimino) => {
-                self.set_active_tetrimino(held_tetrimino
-                    .active_instance()
-                    .with_position(self.board.get_spawn_point()));
+                self.set_active_tetrimino(
+                    held_tetrimino
+                        .active_instance()
+                        .with_position(self.board.get_spawn_point()),
+                );
             }
-            None => {
-                self.next_tetrimino()
-            }
+            None => self.next_tetrimino(),
         }
     }
 
+    pub fn get_held(&self) -> Option<&tetriminos::Tetrimino> {
+        self.held_tetrimino
+    }
+
     pub fn translate(&mut self, direction: Point) -> bool {
-        let translated_tetrimino = self.active_tetrimino
-            .translated(direction);
-            
+        let translated_tetrimino = self.active_tetrimino.translated(direction);
+
         if self.board.does_tetrimino_fit(translated_tetrimino) {
             self.set_active_tetrimino(translated_tetrimino);
 
@@ -157,17 +168,17 @@ impl<'a> GameCore<'a> {
 
             true
         } else {
-            let wall_kicks = self.active_tetrimino
+            let wall_kicks = self
+                .active_tetrimino
                 .get_tetrimino()
                 .get_wall_kicks(self.active_tetrimino.orientation, direction);
 
             for wall_kick in wall_kicks.iter() {
-                let translated_tetrimino = oriented_tetrimino
-                    .translated(*wall_kick);
+                let translated_tetrimino = oriented_tetrimino.translated(*wall_kick);
                 if self.board.does_tetrimino_fit(translated_tetrimino) {
                     self.set_active_tetrimino(translated_tetrimino);
 
-                    return true
+                    return true;
                 }
             }
 

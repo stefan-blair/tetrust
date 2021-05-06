@@ -1,5 +1,5 @@
-use crate::game_core::utils::point::Point;
 use crate::game_core::tetriminos;
+use crate::game_core::utils::point::Point;
 
 pub struct Board {
     cells: Vec<(Vec<bool>, usize)>,
@@ -54,7 +54,6 @@ impl Board {
             self.get_row_mut(point.y() as usize)[point.x() as usize] = true;
         }
 
-
         return true;
     }
 
@@ -101,13 +100,11 @@ impl Board {
     }
 
     pub fn clear_rows(&mut self, mut rows: Vec<i32>) {
-        println!("clearing rows: {:?}", rows);
         rows.sort();
         let mut removed_rows = 0;
         for row in rows.into_iter().map(|i| i as usize) {
             if *self.get_row_count_mut(row - removed_rows) == self.width {
                 self.cells.remove(row - removed_rows);
-                println!("removing {}", row - removed_rows);
                 removed_rows += 1;
             }
         }

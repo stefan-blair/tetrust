@@ -6,6 +6,10 @@ impl Point {
         Self(x, y)
     }
 
+    pub fn diag(r: i32) -> Self {
+        Self(r, r)
+    }
+
     pub fn unit_y(y: i32) -> Self {
         Self(0, y)
     }
@@ -16,6 +20,14 @@ impl Point {
 
     pub fn y(self) -> i32 {
         self.1
+    }
+
+    pub fn min(self) -> i32 {
+        std::cmp::min(self.0, self.1)
+    }
+
+    pub fn max(self) -> i32 {
+        std::cmp::max(self.0, self.1)
     }
 }
 
@@ -32,6 +44,22 @@ impl std::ops::Sub for Point {
 
     fn sub(self, other: Self) -> Self {
         Point(self.0 - other.0, self.1 - other.1)
+    }
+}
+
+impl std::ops::Div for Point {
+    type Output = Point;
+
+    fn div(self, other: Self) -> Self {
+        Point(self.0 / other.0, self.1 / other.1)
+    }
+}
+
+impl std::ops::Mul for Point {
+    type Output = Point;
+
+    fn mul(self, other: Self) -> Self {
+        Point(self.0 * other.0, self.1 * other.1)
     }
 }
 

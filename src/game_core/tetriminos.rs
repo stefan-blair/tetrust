@@ -1,6 +1,5 @@
+use crate::game_core::utils::orientations::{Direction, Orientation};
 use crate::game_core::utils::point::{PartialPoint, Point};
-use crate::game_core::utils::orientations::{Orientation, Direction};
-
 
 pub struct Tetrimino {
     // an array of shapes, one for each orientation
@@ -9,6 +8,8 @@ pub struct Tetrimino {
     wall_kicks: [[&'static [Point]; Direction::COUNT]; Orientation::COUNT],
     // the top left point of the tetrimino's bounding box
     bounding_box: Point,
+    // the width and height, in cells, of the tetriminio
+    dimensions: Point,
 }
 
 impl Tetrimino {
@@ -17,6 +18,7 @@ impl Tetrimino {
         wall_kicks: [[&'static [Point]; Direction::COUNT]; Orientation::COUNT],
         bounding_box: Point,
     ) -> Self {
+        // initialize the different shape rotations
         let mut shapes = Vec::new();
         let mut current_rotation = shape.to_vec();
         for _ in 0..Orientation::COUNT {
@@ -36,10 +38,30 @@ impl Tetrimino {
             current_rotation = rotated;
         }
 
+        // calculate the dimensions of the tetrimino
+        let (mut left, mut right, mut up, mut down) = (0, 0, 0, 0);
+        for point in shapes[0].iter() {
+            if point.x() < left {
+                left = point.x();
+            }
+            if point.x() > right {
+                right = point.x();
+            }
+            if point.y() < down {
+                down = point.y();
+            }
+            if point.y() > up {
+                up = point.y();
+            }
+        }
+
+        let dimensions = Point(right - left + 1, up - down + 1);
+
         Self {
             shapes,
             wall_kicks,
             bounding_box,
+            dimensions,
         }
     }
 
@@ -53,6 +75,18 @@ impl Tetrimino {
 
     pub fn get_bounding_box(&self) -> Point {
         self.bounding_box
+    }
+
+    pub fn get_points(&self) -> Vec<Point> {
+        self.shapes[0]
+            .iter()
+            .cloned()
+            .map(|p| p - self.bounding_box)
+            .collect::<Vec<_>>()
+    }
+
+    pub fn get_dimensions(&self) -> Point {
+        self.dimensions
     }
 }
 

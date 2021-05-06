@@ -34,7 +34,7 @@ impl Orientation {
     pub fn rotated(self, direction: Direction) -> Self {
         match direction {
             Direction::Clockwise => self.rotated_clockwise(),
-            Direction::CounterClockwise => self.rotated_counter_clockwise()
+            Direction::CounterClockwise => self.rotated_counter_clockwise(),
         }
     }
 }
@@ -42,7 +42,7 @@ impl Orientation {
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Direction {
     Clockwise,
-    CounterClockwise
+    CounterClockwise,
 }
 
 impl Direction {

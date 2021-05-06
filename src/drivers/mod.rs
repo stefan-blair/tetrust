@@ -1,8 +1,7 @@
 use crate::game_core::GameCore;
 
-
 pub struct Driver<'a> {
-    pub core: GameCore<'a>,
+    core: GameCore<'a>,
 
     gravity_frames_per_cell_per_level: &'static [usize],
     frames_since_drop: usize,
@@ -14,11 +13,7 @@ pub struct Driver<'a> {
 }
 
 impl<'a> Driver<'a> {
-    pub fn new(
-        core: GameCore<'a>, 
-        gravity_table: &'static[usize],
-        lock_delay: f32
-    ) -> Self {
+    pub fn new(core: GameCore<'a>, gravity_table: &'static [usize], lock_delay: f32) -> Self {
         Self {
             core,
 
@@ -28,8 +23,16 @@ impl<'a> Driver<'a> {
             level: 0,
             score: 0,
 
-            lock_delay
+            lock_delay,
         }
+    }
+
+    pub fn get_game_core(&self) -> &GameCore<'a> {
+        &self.core
+    }
+
+    pub fn get_game_core_mut(&mut self) -> &mut GameCore<'a> {
+        &mut self.core
     }
 
     pub fn next_frame(&mut self) {

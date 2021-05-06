@@ -1,6 +1,5 @@
 pub mod tetriminos;
 
-
 pub mod settings {
     pub const QUEUE_LENGTH: usize = 3;
 }
