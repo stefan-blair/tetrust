@@ -5,6 +5,7 @@ mod drivers;
 mod game_core;
 mod ui;
 
+use drivers::Driver;
 use game_core::utils::point::Point;
 use ui::widget::Widget;
 
@@ -41,7 +42,7 @@ async fn main() {
     // initialize game engine
     let core = game_core::GameCore::new(&tetrimino_types, board, queue_length, &mut rng);
 
-    let mut driver = drivers::Driver::new(core, TEST_GRAVITY, 0.5);
+    let mut driver = drivers::base_driver::BaseDriver::new(core, TEST_GRAVITY, 0.5);
 
     let tetris_board = ui::tetris_board::TetrisBoard;
     let hold_display =
@@ -71,16 +72,12 @@ async fn main() {
 
         driver.next_frame();
 
-        if is_key_pressed(KeyCode::Space) {
-            driver.get_game_core_mut().next_tetrimino()
-        }
-
         if is_key_pressed(KeyCode::A) {
-            driver.get_game_core_mut().rotate_counterclockwise();
+            driver.rotate_counterclockwise();
         }
 
         if is_key_pressed(KeyCode::D) {
-            driver.get_game_core_mut().rotate_clockwise();
+            driver.rotate_clockwise();
         }
 
         if is_key_pressed(KeyCode::W) {
@@ -88,16 +85,16 @@ async fn main() {
         }
 
         if is_key_pressed(KeyCode::Left) {
-            driver.get_game_core_mut().translate_left();
+            driver.translate_left();
         }
         if is_key_pressed(KeyCode::Right) {
-            driver.get_game_core_mut().translate_right();
+            driver.translate_right();
         }
         if is_key_pressed(KeyCode::Down) {
-            driver.get_game_core_mut().fall();
+            driver.fall();
         }
         if is_key_pressed(KeyCode::Up) {
-            driver.get_game_core_mut().fastfall();
+            driver.fastfall();
         }
 
         tetris_board.draw(&driver, (Point(80, 10), Point(280, 410)));

@@ -39,13 +39,18 @@ impl Widget for TetrisBoard {
                 );
 
                 if game_core.get_board().is_point_filled(point) {
-                    tiles::draw_active_tile(pixel, cell_size)
-                } else if active_tetrimino_points
+                    let value = game_core.get_board().get_cell(point).unwrap();
+                    tiles::draw_active_tile(pixel, cell_size, value)
+                } else if let Some((i, _)) = active_tetrimino_points
                     .iter()
-                    .find(|p| **p == point)
-                    .is_some()
+                    .enumerate()
+                    .find(|(_, p)| **p == point)
                 {
-                    tiles::draw_filled_tile(pixel, cell_size)
+                    tiles::draw_active_tile(
+                        pixel, 
+                        cell_size, 
+                        game_core.get_active_tetrimino().get_tetrimino().get_values()[i]
+                    )
                 } else if ghost_tetrimino_points
                     .iter()
                     .find(|p| **p == point)

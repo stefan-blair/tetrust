@@ -1,8 +1,11 @@
 use crate::game_core::tetriminos;
 use crate::game_core::utils::point::Point;
 
+
+type Cell = Option<u32>;
+
 pub struct Board {
-    cells: Vec<(Vec<bool>, usize)>,
+    cells: Vec<(Vec<Cell>, usize)>,
     height: usize,
     width: usize,
 }
@@ -16,11 +19,11 @@ impl Board {
         }
     }
 
-    fn get_row_mut(&mut self, index: usize) -> &mut Vec<bool> {
+    fn get_row_mut(&mut self, index: usize) -> &mut Vec<Cell> {
         &mut self.cells[index].0
     }
 
-    fn get_row(&self, index: usize) -> &Vec<bool> {
+    fn get_row(&self, index: usize) -> &Vec<Cell> {
         &self.cells[index].0
     }
 
@@ -36,22 +39,22 @@ impl Board {
         }
     }
 
-    fn get_cell(&self, point: Point) -> bool {
+    pub fn get_cell(&self, point: Point) -> Cell {
         self.get_row(point.y() as usize)[point.x() as usize]
     }
 
-    pub fn fill_point(&mut self, point: Point) -> bool {
+    pub fn fill_point(&mut self, point: Point, value: u32) -> bool {
         while (point.y() as usize) >= self.cells.len() {
             if self.cells.len() + 1 >= self.height {
                 return false;
             }
 
-            self.cells.push((vec![false; self.width], 0));
+            self.cells.push((vec![None; self.width], 0));
         }
 
-        if !self.get_cell(point) {
+        if !self.get_cell(point).is_some() {
             *self.get_row_count_mut(point.y() as usize) += 1;
-            self.get_row_mut(point.y() as usize)[point.x() as usize] = true;
+            self.get_row_mut(point.y() as usize)[point.x() as usize] = Some(value);
         }
 
         return true;
@@ -61,7 +64,7 @@ impl Board {
         if point.x() < 0 || (point.x() as usize) >= self.width {
             true
         } else if (point.y() as usize) < self.cells.len() && point.y() >= 0 {
-            self.get_cell(point)
+            self.get_cell(point).is_some()
         } else if point.y() < 0 {
             true
         } else {
@@ -86,8 +89,8 @@ impl Board {
     pub fn add_tetrimino(&mut self, tetrimino: tetriminos::ActiveTetrimino) -> Option<Vec<i32>> {
         let mut rows = Vec::new();
 
-        for point in tetrimino.get_points() {
-            if !self.fill_point(point) {
+        for (i, point) in tetrimino.get_points().into_iter().enumerate() {
+            if !self.fill_point(point, tetrimino.get_tetrimino().get_values()[i]) {
                 return None;
             }
 

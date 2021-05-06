@@ -125,32 +125,23 @@ impl<'a> GameCore<'a> {
         }
     }
 
-    pub fn translate_left(&mut self) -> bool {
-        self.translate(Point(-1, 0))
-    }
-
-    pub fn translate_right(&mut self) -> bool {
-        self.translate(Point(1, 0))
-    }
-
-    pub fn add_tetrimino(&mut self) {
-        if let Some(rows) = self.board.add_tetrimino(self.active_tetrimino) {
-            self.clear_rows(rows);
-        }
+    pub fn add_tetrimino(&mut self) -> Option<Vec<i32>> {
+        let rows = self.board.add_tetrimino(self.active_tetrimino);
         self.next_tetrimino();
+
+        rows
     }
 
-    pub fn fall(&mut self) -> bool {
+    pub fn fall(&mut self) -> Option<Vec<i32>> {
         // if the piece can fall no further, then place it and get the next piece
         if !self.translate(Point(0, -1)) {
-            self.add_tetrimino();
-            false
+            self.add_tetrimino()
         } else {
-            true
+            None
         }
     }
 
-    pub fn fastfall(&mut self) {
+    pub fn fastfall(&mut self) -> Option<Vec<i32>> {
         let translation = self.board.first_collision(self.active_tetrimino);
         self.active_tetrimino = self.active_tetrimino.translated(translation);
         self.add_tetrimino()
@@ -184,13 +175,5 @@ impl<'a> GameCore<'a> {
 
             false
         }
-    }
-
-    pub fn rotate_clockwise(&mut self) -> bool {
-        self.rotate(Direction::Clockwise)
-    }
-
-    pub fn rotate_counterclockwise(&mut self) -> bool {
-        self.rotate(Direction::CounterClockwise)
     }
 }

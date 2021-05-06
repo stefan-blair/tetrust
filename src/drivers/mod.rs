@@ -1,45 +1,43 @@
 use crate::game_core::GameCore;
+use crate::game_core::utils::point::Point;
+use crate::game_core::utils::orientations::Direction;
 
-pub struct Driver<'a> {
-    core: GameCore<'a>,
+pub mod base_driver;
+pub mod sticky_driver;
 
-    gravity_frames_per_cell_per_level: &'static [usize],
-    frames_since_drop: usize,
 
-    level: usize,
-    score: usize,
+pub trait Driver<'a> {
+    fn get_game_core(&self) -> &GameCore<'a>;
+    fn get_game_core_mut(&mut self) -> &mut GameCore<'a>;
+    fn next_frame(&mut self);
 
-    lock_delay: f32,
-}
-
-impl<'a> Driver<'a> {
-    pub fn new(core: GameCore<'a>, gravity_table: &'static [usize], lock_delay: f32) -> Self {
-        Self {
-            core,
-
-            gravity_frames_per_cell_per_level: gravity_table,
-            frames_since_drop: 0,
-
-            level: 0,
-            score: 0,
-
-            lock_delay,
-        }
+    fn translate_left(&mut self) -> bool {
+        self.get_game_core_mut().translate(Point(-1, 0))
     }
 
-    pub fn get_game_core(&self) -> &GameCore<'a> {
-        &self.core
+    fn translate_right(&mut self) -> bool {
+        self.get_game_core_mut().translate(Point(1, 0))
     }
 
-    pub fn get_game_core_mut(&mut self) -> &mut GameCore<'a> {
-        &mut self.core
+    fn rotate_clockwise(&mut self) -> bool {
+        self.get_game_core_mut().rotate(Direction::Clockwise)
     }
 
-    pub fn next_frame(&mut self) {
-        self.frames_since_drop += 1;
-        if self.frames_since_drop >= self.gravity_frames_per_cell_per_level[self.level] {
-            self.core.fall();
-            self.frames_since_drop = 0;
+    fn rotate_counterclockwise(&mut self) -> bool {
+        self.get_game_core_mut().rotate(Direction::CounterClockwise)
+    }
+
+    fn fall(&mut self) {
+        let game_core = self.get_game_core_mut();
+        if let Some(rows) = game_core.fall() {
+            game_core.clear_rows(rows)
+        }        
+    }
+
+    fn fastfall(&mut self) {
+        let game_core = self.get_game_core_mut();
+        if let Some(rows) = game_core.fastfall() {
+            game_core.clear_rows(rows)
         }
     }
 }

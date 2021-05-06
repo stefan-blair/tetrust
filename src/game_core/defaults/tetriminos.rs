@@ -2,7 +2,7 @@ use crate::game_core::tetriminos;
 use crate::game_core::utils::point::{PartialPoint, Point};
 
 type WallKickTable = [[&'static [Point]; 2]; 4];
-type TetriminoData = (&'static [PartialPoint], Point, WallKickTable);
+type TetriminoData = (&'static [PartialPoint], u32, Point, WallKickTable);
 
 pub const I_TETRIMINO: TetriminoData = (
     &[
@@ -11,6 +11,7 @@ pub const I_TETRIMINO: TetriminoData = (
         PartialPoint(0.5, 0.5),
         PartialPoint(1.5, 0.5),
     ],
+    1,
     Point(-2, 1),
     I_WALL_KICKS,
 );
@@ -22,6 +23,7 @@ pub const T_TETRIMINO: TetriminoData = (
         PartialPoint(1.0, 0.0),
         PartialPoint(0.0, 1.0),
     ],
+    2,
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -33,6 +35,7 @@ pub const O_TETRIMINO: TetriminoData = (
         PartialPoint(-0.5, -0.5),
         PartialPoint(0.5, -0.5),
     ],
+    3,
     Point(-2, 0),
     OTHER_WALL_KICKS,
 );
@@ -44,6 +47,7 @@ pub const S_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
+    4,
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -55,6 +59,7 @@ pub const Z_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(1.0, 0.0),
     ],
+    5,
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -66,6 +71,7 @@ pub const L_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
+    6,
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -77,6 +83,7 @@ pub const J_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
+    7,
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -142,8 +149,8 @@ pub const OTHER_WALL_KICKS: [[&[Point]; 2]; 4] = [
 pub fn tetrimino_types() -> Vec<tetriminos::Tetrimino> {
     TETRIMINOS
         .iter()
-        .map(|(shape, bounding_box, wall_kicks)| {
-            tetriminos::Tetrimino::new(shape, *wall_kicks, *bounding_box)
+        .map(|(shape, value, bounding_box, wall_kicks)| {
+            tetriminos::Tetrimino::new(shape, vec![*value; 4], *wall_kicks, *bounding_box)
         })
         .collect::<Vec<_>>()
 }

@@ -4,6 +4,8 @@ use crate::game_core::utils::point::{PartialPoint, Point};
 pub struct Tetrimino {
     // an array of shapes, one for each orientation
     shapes: Vec<Vec<Point>>,
+    // an array of numbers corresponding to each point.  could be used for color or something
+    values: Vec<u32>,
     // a table of wall kicks to attempt for each orientation -> orientation transition
     wall_kicks: [[&'static [Point]; Direction::COUNT]; Orientation::COUNT],
     // the top left point of the tetrimino's bounding box
@@ -15,6 +17,7 @@ pub struct Tetrimino {
 impl Tetrimino {
     pub fn new(
         shape: &[PartialPoint],
+        values: Vec<u32>,
         wall_kicks: [[&'static [Point]; Direction::COUNT]; Orientation::COUNT],
         bounding_box: Point,
     ) -> Self {
@@ -59,6 +62,7 @@ impl Tetrimino {
 
         Self {
             shapes,
+            values,
             wall_kicks,
             bounding_box,
             dimensions,
@@ -87,6 +91,10 @@ impl Tetrimino {
 
     pub fn get_dimensions(&self) -> Point {
         self.dimensions
+    }
+
+    pub fn get_values(&self) -> &Vec<u32> {
+        &self.values
     }
 }
 
@@ -147,8 +155,4 @@ impl<'a> ActiveTetrimino<'a> {
     pub fn get_tetrimino(&self) -> &'a Tetrimino {
         self.tetrimino
     }
-
-    // pub fn get_bounding_box(&self) -> Point {
-    //     self.tetrimino.bounding_box + self.
-    // }
 }

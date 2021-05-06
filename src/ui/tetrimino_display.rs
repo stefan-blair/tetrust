@@ -70,13 +70,13 @@ impl Widget for TetriminoDisplay {
 
             let padding = (Point::diag(length) - tetrimino.get_dimensions()) * Point::diag(cell_size / 2);
 
-            for point in points {
+            for (i, point) in points.into_iter().enumerate() {
                 // the point on the screen
                 let pixel = Point(
                     point.x() * cell_size + area.0.x() + padding.x(),
                     area.1.y() - (point.y() + 1) * cell_size - padding.y(),
                 );
-                tiles::draw_active_tile(pixel, cell_size)
+                tiles::draw_active_tile(pixel, cell_size, tetrimino.get_values()[i])
             }
         }
     }

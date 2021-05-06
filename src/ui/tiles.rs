@@ -2,25 +2,25 @@ use macroquad::prelude::*;
 
 use crate::game_core::utils::point::Point;
 
-pub fn draw_active_tile(point: Point, cell_size: i32) {
+pub fn draw_active_tile(point: Point, cell_size: i32, value: u32) {
     let boarder = cell_size as f32 / 40.0;
-    draw_rectangle(
-        point.x() as f32 + boarder,
-        point.y() as f32 + boarder,
-        cell_size as f32 - 2.0 * boarder,
-        cell_size as f32 - 2.0 * boarder,
-        RED,
-    );
-}
+    let color = match value {
+        1 => RED,
+        2 => BLUE,
+        3 => GREEN,
+        4 => YELLOW,
+        5 => ORANGE,
+        6 => MAGENTA,
+        7 => SKYBLUE,
+        _ => GOLD,
+    };
 
-pub fn draw_filled_tile(point: Point, cell_size: i32) {
-    let boarder = cell_size as f32 / 40.0;
     draw_rectangle(
         point.x() as f32 + boarder,
         point.y() as f32 + boarder,
         cell_size as f32 - 2.0 * boarder,
         cell_size as f32 - 2.0 * boarder,
-        GREEN,
+        color,
     );
 }
 
