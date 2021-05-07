@@ -31,16 +31,12 @@ impl Board {
         &mut self.cells[index].1
     }
 
-    pub fn get_row_count(&self, index: usize) -> usize {
-        if index < self.cells.len() {
-            self.cells[index].1
-        } else {
-            0
-        }
-    }
-
     pub fn get_cell(&self, point: Point) -> Cell {
         self.get_row(point.y() as usize)[point.x() as usize]
+    }
+
+    pub fn set_cell(&mut self, point: Point, value: u32) {
+        self.get_row_mut(point.y() as usize)[point.x() as usize] = Some(value)
     }
 
     pub fn fill_point(&mut self, point: Point, value: u32) -> bool {
@@ -113,18 +109,38 @@ impl Board {
         }
     }
 
-    pub fn first_collision(&self, tetrimino: tetriminos::ActiveTetrimino) -> Point {
-        let mut down_translation = tetrimino.position.y();
-        for point in tetrimino.get_points() {
-            for y in (-1..std::cmp::min(point.y() + 1, self.cells.len() as i32 + 1)).rev() {
-                let dist = Point::unit_y(point.y() - y);
-                if self.is_point_filled(point - dist) {
-                    down_translation = std::cmp::min(down_translation, dist.y() - 1);
-                }
+    pub fn point_first_collision(&self, point: Point) -> Point {
+        let mut down_translation = point.y();
+        for y in (-1..std::cmp::min(point.y() + 1, self.cells.len() as i32 + 1)).rev() {
+            let dist = Point::unit_y(point.y() - y);
+            if self.is_point_filled(point - dist) {
+                down_translation = std::cmp::min(down_translation, dist.y() - 1);
             }
         }
 
         Point::unit_y(-down_translation)
+    }
+
+    pub fn first_collision(&self, tetrimino: tetriminos::ActiveTetrimino) -> Point {
+        tetrimino.get_points()
+            .into_iter()
+            .map(|p| self.point_first_collision(p))
+            .max_by_key(|p| p.y())
+            .unwrap()
+    }
+
+    pub fn num_active_rows(&self) -> usize {
+        self.cells.len()
+    }
+
+    pub fn is_on_board(&self, point: Point) -> bool {
+        if point.x() as usize >= self.width || point.x() < 0 {
+            false
+        } else if point.y() as usize >= self.height || point.y() < 0 {
+            false
+        } else {
+            true
+        }
     }
 
     pub fn get_width(&self) -> usize {

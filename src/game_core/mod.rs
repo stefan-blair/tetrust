@@ -132,12 +132,12 @@ impl<'a> GameCore<'a> {
         rows
     }
 
-    pub fn fall(&mut self) -> Option<Vec<i32>> {
+    pub fn fall(&mut self) -> (bool, Option<Vec<i32>>) {
         // if the piece can fall no further, then place it and get the next piece
         if !self.translate(Point(0, -1)) {
-            self.add_tetrimino()
+            (false, self.add_tetrimino())
         } else {
-            None
+            (true, None)
         }
     }
 

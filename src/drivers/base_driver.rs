@@ -1,7 +1,5 @@
 use crate::drivers::Driver;
 use crate::game_core::GameCore;
-use crate::game_core::utils::point::Point;
-use crate::game_core::utils::orientations::Direction;
 
 
 pub struct BaseDriver<'a> {

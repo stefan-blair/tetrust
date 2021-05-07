@@ -29,7 +29,7 @@ pub trait Driver<'a> {
 
     fn fall(&mut self) {
         let game_core = self.get_game_core_mut();
-        if let Some(rows) = game_core.fall() {
+        if let (_, Some(rows)) = game_core.fall() {
             game_core.clear_rows(rows)
         }        
     }

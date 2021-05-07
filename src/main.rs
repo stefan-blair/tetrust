@@ -36,13 +36,62 @@ async fn main() {
     let tetrimino_types = game_core::defaults::tetriminos::tetrimino_types();
     let width = game_core::defaults::dimensions::CELL_WIDTH;
     let height = game_core::defaults::dimensions::CELL_HEIGHT;
-    let board = game_core::board::Board::new(width, height);
+    let mut board = game_core::board::Board::new(width, height);
+
+    let points = vec![
+        // (1, 4, 1),
+        // (1, 5, 1),
+        // (1, 6, 1),
+        // (1, 7, 1),
+        // (1, 8, 1),
+        // (1, 9, 1),
+        // (1, 10, 1),
+        // (1, 11, 1),
+        // (1, 12, 1),
+        // (1, 13, 1),
+        // (1, 14, 1),
+        // (1, 15, 1),
+        // (2, 15, 1),
+        // (2, 4, 1),
+        // (3, 4, 1),
+        // (3, 5, 1),
+        // (3, 3, 1),
+        // (3, 6, 1),
+        // (3, 2, 1),
+        // (4, 6, 1),
+        // (4, 2, 1),
+
+
+        // (4, 4, 2),
+        // (5, 4, 2),
+        // (5, 5, 2),
+        // (5, 6, 2),
+        // (5, 7, 2),
+        // (5, 8, 2),
+        // (4, 8, 2),
+        // (5, 9, 2),
+        // (5, 10, 2),
+        // (5, 11, 2),
+        // (5, 12, 2),
+        // (4, 12, 2),
+
+        // (4, 10, 3),
+        // (3, 10, 3),
+        // (2, 10, 3),
+        // (2, 9, 3),
+        // (2, 8, 3),
+    ];
+
+    for (x, y, value) in points {
+        board.fill_point(Point(x, y), value);
+    }
+
     let queue_length = game_core::defaults::settings::QUEUE_LENGTH;
     let mut rng = thread_rng();
     // initialize game engine
     let core = game_core::GameCore::new(&tetrimino_types, board, queue_length, &mut rng);
 
-    let mut driver = drivers::base_driver::BaseDriver::new(core, TEST_GRAVITY, 0.5);
+    let mut driver = drivers::sticky_driver::StickyDriver::new(core, TEST_GRAVITY, 0.5);
 
     let tetris_board = ui::tetris_board::TetrisBoard;
     let hold_display =
@@ -61,6 +110,8 @@ async fn main() {
         }),
     ];
 
+    let mut pause = false;
+
     loop {
         // add gravity to the engine and a time update function
         // get_frame_time()
@@ -70,8 +121,25 @@ async fn main() {
 
         clear_background(BLUE);
 
-        driver.next_frame();
+        if is_key_pressed(KeyCode::P) {
+            if pause {
+                pause = false;
+            } else {
+                pause = true
+            }
+        }
 
+        if !pause {
+            driver.next_frame();
+        }
+        
+        if is_key_pressed(KeyCode::Space) {
+            let board = driver.get_game_core().get_board();
+            let bottom_points = (0..board.get_width()).map(|x| Point(x as i32, 0)).filter(|p| board.is_point_filled(*p)).collect::<Vec<_>>();
+            println!("bottom_points == {:?}", bottom_points);
+            driver.calculate_sticky_falls(bottom_points);
+        }
+        
         if is_key_pressed(KeyCode::A) {
             driver.rotate_counterclockwise();
         }
