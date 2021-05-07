@@ -43,7 +43,7 @@ impl TetriminoDisplay {
  */
 
 impl Widget for TetriminoDisplay {
-    fn draw(&self, driver: &Driver, area: (Point, Point)) {
+    fn draw(&self, driver: &dyn Driver, area: (Point, Point), _: Option<&crate::drivers::BoardTransition>, _: usize, _: usize) {
         let game_core = driver.get_game_core();
         let dimensions = area.1 - area.0;
 
@@ -76,7 +76,7 @@ impl Widget for TetriminoDisplay {
                     point.x() * cell_size + area.0.x() + padding.x(),
                     area.1.y() - (point.y() + 1) * cell_size - padding.y(),
                 );
-                tiles::draw_active_tile(pixel, cell_size, tetrimino.get_values()[i])
+                tiles::draw_active_tile(pixel, cell_size, tetrimino.get_values()[i], 1.0)
             }
         }
     }

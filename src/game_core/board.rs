@@ -35,8 +35,8 @@ impl Board {
         self.get_row(point.y() as usize)[point.x() as usize]
     }
 
-    pub fn set_cell(&mut self, point: Point, value: u32) {
-        self.get_row_mut(point.y() as usize)[point.x() as usize] = Some(value)
+    pub fn get_cell_mut(&mut self, point: Point) -> &mut Cell {
+        &mut self.get_row_mut(point.y() as usize)[point.x() as usize]
     }
 
     pub fn fill_point(&mut self, point: Point, value: u32) -> bool {
@@ -105,6 +105,23 @@ impl Board {
             if *self.get_row_count_mut(row - removed_rows) == self.width {
                 self.cells.remove(row - removed_rows);
                 removed_rows += 1;
+            }
+        }
+    }
+
+    pub fn clear_points(&mut self, points: Vec<Point>) {
+        for point in points {
+            *self.get_cell_mut(point) = None
+        }
+    }
+
+    // could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
+    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) {
+        for (point, fall) in point_drops {
+            let cell = self.get_cell_mut(point);
+            if let Some(value) = *cell {
+                *cell = None;
+                self.fill_point(point - Point::unit_y(fall), value);
             }
         }
     }

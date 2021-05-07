@@ -151,6 +151,15 @@ impl<'a> GameCore<'a> {
         self.board.clear_rows(rows)
     }
 
+    pub fn clear_points(&mut self, points: Vec<Point>) {
+        self.board.clear_points(points)
+    }
+
+    // could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
+    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) {
+        self.board.translate_falling_points(point_drops)
+    }
+
     pub fn rotate(&mut self, direction: Direction) -> bool {
         let oriented_tetrimino = self.active_tetrimino.rotated(direction);
 

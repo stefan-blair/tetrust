@@ -111,14 +111,11 @@ async fn main() {
     ];
 
     let mut pause = false;
+    let mut transitions = Vec::new();
+    let transition_duration = 10;
+    let mut transition_elapsed = 0;
 
     loop {
-        // add gravity to the engine and a time update function
-        // get_frame_time()
-        // make a driver, which takes an engine and does actual game shit with it
-
-        // get_frame_time()
-
         clear_background(BLUE);
 
         if is_key_pressed(KeyCode::P) {
@@ -129,46 +126,55 @@ async fn main() {
             }
         }
 
-        if !pause {
-            driver.next_frame();
-        }
-        
-        if is_key_pressed(KeyCode::Space) {
-            let board = driver.get_game_core().get_board();
-            let bottom_points = (0..board.get_width()).map(|x| Point(x as i32, 0)).filter(|p| board.is_point_filled(*p)).collect::<Vec<_>>();
-            println!("bottom_points == {:?}", bottom_points);
-            driver.calculate_sticky_falls(bottom_points);
-        }
-        
-        if is_key_pressed(KeyCode::A) {
-            driver.rotate_counterclockwise();
+        if transitions.is_empty() {
+            if !pause {
+                driver.next_frame();
+            }
+            
+            // if is_key_pressed(KeyCode::Space) {
+            //     let board = driver.get_game_core().get_board();
+            //     let bottom_points = (0..board.get_width()).map(|x| Point(x as i32, 0)).filter(|p| board.is_point_filled(*p)).collect::<Vec<_>>();
+            //     driver.calculate_sticky_falls(bottom_points);
+            // }
+            
+            if is_key_pressed(KeyCode::A) {
+                driver.rotate_counterclockwise();
+            }
+    
+            if is_key_pressed(KeyCode::D) {
+                driver.rotate_clockwise();
+            }
+    
+            if is_key_pressed(KeyCode::W) {
+                driver.get_game_core_mut().hold();
+            }
+    
+            if is_key_pressed(KeyCode::Left) {
+                driver.translate_left();
+            }
+            if is_key_pressed(KeyCode::Right) {
+                driver.translate_right();
+            }
+            if is_key_pressed(KeyCode::Down) {
+                transitions = driver.fall();
+            }
+            if is_key_pressed(KeyCode::Up) {
+                transitions = driver.fastfall();
+            }    
+        } else {
+            transition_elapsed += 1;
+            if transition_elapsed > transition_duration {
+                transition_elapsed = 0;
+                if let Some(transition) = transitions.pop() {
+                    driver.finish_transition(transition)
+                }
+            }
         }
 
-        if is_key_pressed(KeyCode::D) {
-            driver.rotate_clockwise();
-        }
-
-        if is_key_pressed(KeyCode::W) {
-            driver.get_game_core_mut().hold();
-        }
-
-        if is_key_pressed(KeyCode::Left) {
-            driver.translate_left();
-        }
-        if is_key_pressed(KeyCode::Right) {
-            driver.translate_right();
-        }
-        if is_key_pressed(KeyCode::Down) {
-            driver.fall();
-        }
-        if is_key_pressed(KeyCode::Up) {
-            driver.fastfall();
-        }
-
-        tetris_board.draw(&driver, (Point(80, 10), Point(280, 410)));
-        hold_display.draw(&driver, (Point(10, 40), Point(70, 100)));
+        tetris_board.draw(&driver, (Point(80, 10), Point(280, 410)), transitions.last(), transition_elapsed, transition_duration);
+        hold_display.draw(&driver, (Point(10, 40), Point(70, 100)), transitions.last(), transition_elapsed, transition_duration);
         for (i, display) in queue_display.iter().enumerate() {
-            display.draw(&driver, (Point(300, 40 + 80 * i as i32), Point(360, 100 + 80 * i as i32)));
+            display.draw(&driver, (Point(300, 40 + 80 * i as i32), Point(360, 100 + 80 * i as i32)), transitions.last(), transition_elapsed, transition_duration);
         }
 
         next_frame().await

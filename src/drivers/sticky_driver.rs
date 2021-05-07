@@ -32,6 +32,21 @@ impl<'a> StickyDriver<'a> {
         }
     }
 
+    /**
+     * Make this by row, and then make a seperate function which takes in some points and
+     * makes sure each one sticks to some other external point (should be much faster).
+     * 
+     * Also, make a transition() method, such that the graphics can animate transitions.
+     * So basically, is_transitioning -> some transition type, 
+     *  enum {
+     *      PointsDeleted (array of points to delete)
+     *      RowsDeleted (array of rows to delete)
+     *      RowsFalling (array of rows to fall)
+     *      PointsFalling (a 2d array mapping points to their future point)
+     *  } 
+     * 
+     *  That way, the widget can draw the animations
+     */
     pub fn calculate_sticky_falls(&self, mut visit: Vec<Point>) -> Vec<(Point, Point)> {
         let lowest_point = visit.iter().map(|p| p.y()).min().unwrap();
         let board = self.core.get_board();
