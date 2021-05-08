@@ -29,7 +29,7 @@ impl Widget for TetrisBoard {
         let ghost_tetrimino_points = game_core.get_ghost_tetriminio().get_points();
 
         // counts the number of rows under the current row that are dissapearing
-        let mut disappearing_rows_under = 0;
+        let mut deleted_rows = 0;
         // draw the tiles
         for y in 0..game_core.get_board().get_height() as i32 {
             let mut alpha = 1.0;
@@ -42,9 +42,19 @@ impl Widget for TetrisBoard {
             for x in 0..game_core.get_board().get_width() as i32 {
                 // the point on the board
                 let point = Point(x, y);
+ 
+                let point_fall = if let Some(BoardTransition::PointsFalling(points)) = transition {
+                    points
+                        .iter()
+                        .find(|(p, _)| *p == point)
+                        .map(|(_, f)| *f)
+                        .unwrap_or(0)
+                } else {
+                    deleted_rows
+                };
                 // using the number of rows beneath the current row that are disappearing, calculate fall based on the elapsed frames of the animation
-                let disappearing_row_offset = (cell_size * disappearing_rows_under) as f32 * transition_elapsed as f32 / transition_total as f32;
-                let disappearing_row_offset = Point::unit_y(disappearing_row_offset as i32);
+                let point_fall_offset = (cell_size * point_fall) as f32 * transition_elapsed as f32 / transition_total as f32;
+                let point_fall_offset = Point::unit_y(point_fall_offset as i32);
                 // the point on the screen
                 let pixel = Point(
                     x * cell_size + area.0.x(),
@@ -55,7 +65,7 @@ impl Widget for TetrisBoard {
 
                 if game_core.get_board().is_point_filled(point) {
                     let value = game_core.get_board().get_cell(point).unwrap();
-                    tiles::draw_active_tile(pixel + disappearing_row_offset, cell_size, value, alpha)
+                    tiles::draw_active_tile(pixel + point_fall_offset, cell_size, value, alpha)
                 } else if let Some((i, _)) = active_tetrimino_points
                     .iter()
                     .enumerate()
@@ -78,7 +88,7 @@ impl Widget for TetrisBoard {
 
             if let Some(BoardTransition::RowsDeleted(rows)) = transition {
                 if rows.contains(&y) {
-                    disappearing_rows_under += 1;
+                    deleted_rows += 1;
                 }
             }
         }

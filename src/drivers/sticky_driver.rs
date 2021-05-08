@@ -1,5 +1,8 @@
 use std::cmp::min;
-use crate::drivers::Driver;
+use crate::drivers::{
+    Driver,
+    BoardTransition
+};
 use crate::game_core::GameCore;
 use crate::game_core::board::Board;
 use crate::game_core::utils::point::Point;
@@ -47,9 +50,9 @@ impl<'a> StickyDriver<'a> {
      * 
      *  That way, the widget can draw the animations
      */
-    pub fn calculate_sticky_falls(&self, mut visit: Vec<Point>) -> Vec<(Point, Point)> {
-        let lowest_point = visit.iter().map(|p| p.y()).min().unwrap();
+    pub fn calculate_sticky_falls(&self, lowest_point: i32) -> Vec<(Point, i32)> {
         let board = self.core.get_board();
+        let mut visit = (0..board.get_width()).map(|x| Point(x as i32, lowest_point)).filter(|p| board.is_point_filled(*p)).collect::<Vec<_>>();
         let mut shapes = ShapeTracker::new(lowest_point, board);
 
         let mut i = 0;
@@ -126,13 +129,24 @@ impl<'a> StickyDriver<'a> {
 
 
 
-        println!("printing");
-
         shapes.print();
         shapes.apply_dependencies();
         shapes.print();
 
-        Vec::new()
+        let mut falls = Vec::new();
+        for y in lowest_point..board.num_active_rows() as i32 {
+            for x in 0..board.get_width() as i32 {
+                let point = Point(x, y);
+                if let Some(index) = shapes.get_shape_index(point) {
+                    let fall = shapes.get_shape_mut(index).0;
+                    if fall > 0 {
+                        falls.push((point, fall))
+                    }
+                }
+            }
+        }
+
+        falls
     }
 }
 
@@ -145,11 +159,53 @@ impl<'a> Driver<'a> for StickyDriver<'a> {
         &mut self.core
     }
 
-    fn next_frame(&mut self) {
+    fn next_frame(&mut self) -> Vec<BoardTransition> {
         self.frames_since_drop += 1;
         if self.frames_since_drop >= self.gravity_frames_per_cell_per_level[self.level] {
-            self.core.fall();
             self.frames_since_drop = 0;
+            self.fall()
+        } else {
+            Vec::new()
+        }
+    }
+
+    // TODO instead of the fastfall default thing just make the game directly return transitions.  also add a get_board_mut fn and remove the intermediate functions
+    // also keep track of using translation vs distance as terminology
+    // would faster, for the stick calculator, to explore shapes by row first, as its more cache friendly :) 
+    fn fall(&mut self) -> Vec<BoardTransition> {
+        // let points = self.core.get_active_tetrimino().get_points();
+        let (added, mut transitions) = Driver::fall_default(self);
+        if added {
+            // calculate falling points
+            let falls = self.calculate_sticky_falls(0);
+            println!("falls == {:?}", falls);
+            if !falls.is_empty() {
+                transitions.push(BoardTransition::PointsFalling(falls));
+                println!("transitions: {:?}", transitions);
+            }
+        }
+
+        transitions
+    }
+
+    fn fastfall(&mut self) -> Vec<BoardTransition> {
+        let mut points = self.core.get_active_tetrimino().get_points();
+        let (translation, mut transitions) = Driver::fastfall_default(self);
+        points = points.into_iter().map(|p| p - Point::unit_y(translation)).collect::<Vec<_>>();
+        let falls = self.calculate_sticky_falls(0);
+        if !falls.is_empty() {
+            transitions.push(BoardTransition::PointsFalling(falls));
+        }
+        transitions
+    }
+
+    fn rows_cleared(&mut self, rows: Vec<i32>) -> Vec<BoardTransition> {
+        let lowest_row = rows.into_iter().min().unwrap();
+        let falls = self.calculate_sticky_falls(lowest_row);
+        if !falls.is_empty() {
+            vec![BoardTransition::PointsFalling(falls)]
+        } else {
+            vec![]
         }
     }
 }

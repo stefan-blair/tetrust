@@ -23,7 +23,7 @@ pub const T_TETRIMINO: TetriminoData = (
         PartialPoint(1.0, 0.0),
         PartialPoint(0.0, 1.0),
     ],
-    &[1, 2, 2, 2],
+    &[2, 3, 2, 2],
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -35,7 +35,7 @@ pub const O_TETRIMINO: TetriminoData = (
         PartialPoint(-0.5, -0.5),
         PartialPoint(0.5, -0.5),
     ],
-    &[1, 1, 2, 1],
+    &[3, 3, 4, 3],
     Point(-2, 0),
     OTHER_WALL_KICKS,
 );
@@ -47,7 +47,7 @@ pub const S_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
-    &[2, 2, 1, 1],
+    &[4, 4, 5, 5],
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -59,7 +59,7 @@ pub const Z_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(1.0, 0.0),
     ],
-    &[1, 2, 1, 1],
+    &[5, 6, 5, 5],
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -71,7 +71,7 @@ pub const L_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
-    &[2, 2, 1, 1],
+    &[7, 7, 6, 6],
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );
@@ -83,7 +83,7 @@ pub const J_TETRIMINO: TetriminoData = (
         PartialPoint(0.0, 0.0),
         PartialPoint(-1.0, 0.0),
     ],
-    &[2, 2, 1, 1],
+    &[7, 7, 1, 1],
     Point(-1, 1),
     OTHER_WALL_KICKS,
 );

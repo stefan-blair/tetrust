@@ -1,4 +1,4 @@
-use crate::drivers::Driver;
+use crate::drivers::{Driver, BoardTransition};
 use crate::game_core::GameCore;
 
 
@@ -39,11 +39,13 @@ impl<'a> Driver<'a> for BaseDriver<'a> {
         &mut self.core
     }
 
-    fn next_frame(&mut self) {
+    fn next_frame(&mut self) -> Vec<BoardTransition> {
         self.frames_since_drop += 1;
         if self.frames_since_drop >= self.gravity_frames_per_cell_per_level[self.level] {
-            self.core.fall();
             self.frames_since_drop = 0;
+            self.fall()
+        } else {
+            Vec::new()
         }
     }
 }

@@ -9,6 +9,7 @@ pub mod utils;
 use utils::orientations::Direction;
 use utils::point::Point;
 
+
 pub struct GameCore<'a> {
     tetrimino_types: &'a Vec<tetriminos::Tetrimino>,
     active_tetrimino: tetriminos::ActiveTetrimino<'a>,
@@ -54,6 +55,10 @@ impl<'a> GameCore<'a> {
 
     pub fn get_board(&self) -> &board::Board {
         &self.board
+    }
+
+    pub fn get_board_mut(&mut self) -> &mut board::Board {
+        &mut self.board
     }
 
     pub fn get_active_tetrimino(&self) -> &tetriminos::ActiveTetrimino {
@@ -135,29 +140,16 @@ impl<'a> GameCore<'a> {
     pub fn fall(&mut self) -> (bool, Option<Vec<i32>>) {
         // if the piece can fall no further, then place it and get the next piece
         if !self.translate(Point(0, -1)) {
-            (false, self.add_tetrimino())
+            (true, self.add_tetrimino())
         } else {
-            (true, None)
+            (false, None)
         }
     }
 
-    pub fn fastfall(&mut self) -> Option<Vec<i32>> {
+    pub fn fastfall(&mut self) -> (i32, Option<Vec<i32>>) {
         let translation = self.board.first_collision(self.active_tetrimino);
         self.active_tetrimino = self.active_tetrimino.translated(translation);
-        self.add_tetrimino()
-    }
-
-    pub fn clear_rows(&mut self, rows: Vec<i32>) {
-        self.board.clear_rows(rows)
-    }
-
-    pub fn clear_points(&mut self, points: Vec<Point>) {
-        self.board.clear_points(points)
-    }
-
-    // could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
-    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) {
-        self.board.translate_falling_points(point_drops)
+        (-translation.y(), self.add_tetrimino())
     }
 
     pub fn rotate(&mut self, direction: Direction) -> bool {

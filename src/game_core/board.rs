@@ -27,8 +27,8 @@ impl Board {
         &self.cells[index].0
     }
 
-    fn get_row_count_mut(&mut self, index: usize) -> &mut usize {
-        &mut self.cells[index].1
+    fn get_row_count_mut(&mut self, index: i32) -> &mut usize {
+        &mut self.cells[index as usize].1
     }
 
     pub fn get_cell(&self, point: Point) -> Cell {
@@ -49,11 +49,25 @@ impl Board {
         }
 
         if !self.get_cell(point).is_some() {
-            *self.get_row_count_mut(point.y() as usize) += 1;
+            *self.get_row_count_mut(point.y()) += 1;
             self.get_row_mut(point.y() as usize)[point.x() as usize] = Some(value);
         }
 
         return true;
+    }
+
+    pub fn unfill_point(&mut self, point: Point) {
+        let row_count = self.get_row_count_mut(point.y());
+        *row_count -= 1;
+        if *row_count == 0 && point.y() == self.num_active_rows() as i32 - 1 {
+            let mut i = point.y();
+            while *self.get_row_count_mut(i) == 0 {
+                self.cells.remove(i as usize);
+                i -= 1;
+            }
+        } else {
+            *self.get_cell_mut(point) = None;
+        }
     }
 
     pub fn is_point_filled(&self, point: Point) -> bool {
@@ -90,7 +104,7 @@ impl Board {
                 return None;
             }
 
-            if *self.get_row_count_mut(point.y() as usize) == self.width {
+            if *self.get_row_count_mut(point.y()) == self.width {
                 rows.push(point.y())
             }
         }
@@ -101,29 +115,41 @@ impl Board {
     pub fn clear_rows(&mut self, mut rows: Vec<i32>) {
         rows.sort();
         let mut removed_rows = 0;
-        for row in rows.into_iter().map(|i| i as usize) {
+        for row in rows.into_iter() {
             if *self.get_row_count_mut(row - removed_rows) == self.width {
-                self.cells.remove(row - removed_rows);
+                self.cells.remove((row - removed_rows) as usize);
                 removed_rows += 1;
+            } else {
+                println!("error: attempted to remove row that isn't full");
             }
         }
     }
 
-    pub fn clear_points(&mut self, points: Vec<Point>) {
-        for point in points {
+    pub fn clear_points(&mut self, points: &Vec<Point>) {
+        for &point in points.iter() {
             *self.get_cell_mut(point) = None
         }
     }
 
-    // could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
-    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) {
+    // TODO: could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
+    // also need to remember to remove the top rows if stuff falls out of them and they are empty now
+    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) -> Vec<i32> {
+        println!("translating falling points: {:?}", point_drops);
+        let mut rows = Vec::new();
         for (point, fall) in point_drops {
             let cell = self.get_cell_mut(point);
             if let Some(value) = *cell {
-                *cell = None;
+                self.unfill_point(point);
                 self.fill_point(point - Point::unit_y(fall), value);
             }
+
+            if *self.get_row_count_mut(point.y() - fall) == self.width {
+                rows.push(point.y() - fall)
+            }
         }
+
+        return rows
+        // return rows that are now full!
     }
 
     pub fn point_first_collision(&self, point: Point) -> Point {

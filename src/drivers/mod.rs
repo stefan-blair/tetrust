@@ -16,7 +16,7 @@ pub enum BoardTransition {
 pub trait Driver<'a> {
     fn get_game_core(&self) -> &GameCore<'a>;
     fn get_game_core_mut(&mut self) -> &mut GameCore<'a>;
-    fn next_frame(&mut self);
+    fn next_frame(&mut self) -> Vec<BoardTransition>;
 
     fn translate_left(&mut self) -> bool {
         self.get_game_core_mut().translate(Point(-1, 0))
@@ -34,37 +34,65 @@ pub trait Driver<'a> {
         self.get_game_core_mut().rotate(Direction::CounterClockwise)
     }
 
-    fn fall(&mut self) -> Vec<BoardTransition> {
+    fn fall_default(&mut self) -> (bool, Vec<BoardTransition>) {
         let game_core = self.get_game_core_mut();
-        if let (_, Some(rows)) = game_core.fall() {
+        let (added, rows) = game_core.fall();
+        if let Some(rows) = rows {
             if !rows.is_empty() {
-                return vec![BoardTransition::RowsDeleted(rows)]
+                return (true, vec![BoardTransition::RowsDeleted(rows)]);
             }
         }
-        Vec::new()
+        (added, Vec::new())
+    }
+
+    fn fall(&mut self) -> Vec<BoardTransition> {
+        self.fall_default().1
+    }
+
+    fn fastfall_default(&mut self) -> (i32, Vec<BoardTransition>) {
+        let game_core = self.get_game_core_mut();
+        let (translation, rows) = game_core.fastfall();
+        if let Some(rows) = rows {
+            if !rows.is_empty() {
+                return (translation, vec![BoardTransition::RowsDeleted(rows)])
+            }
+        }
+        (translation, vec![])
     }
 
     fn fastfall(&mut self) -> Vec<BoardTransition> {
-        let game_core = self.get_game_core_mut();
-        if let Some(rows) = game_core.fastfall() {
-            if !rows.is_empty() {
-                return vec![BoardTransition::RowsDeleted(rows)]
-            }
-        }
+        self.fastfall_default().1
+    }
+
+    fn rows_cleared(&mut self, _: Vec<i32>) -> Vec<BoardTransition> {
         Vec::new()
     }
 
-    fn finish_transition(&mut self, transition: BoardTransition) {
-        let game_core = self.get_game_core_mut();
+    fn points_cleared(&mut self, mut points: Vec<Point>) -> Vec<BoardTransition> {
+        // sort the points first by x, then by y
+        points.sort_by_key(|p| (p.x(), p.y()));
+        Vec::new()
+    }
+
+    fn finish_transition(&mut self, transition: BoardTransition) -> Vec<BoardTransition>{
+        let board = self.get_game_core_mut().get_board_mut();
         match transition {
             BoardTransition::PointsDeleted(points) => {
-                game_core.clear_points(points)
+                board.clear_points(&points);
+                self.points_cleared(points)
             }
             BoardTransition::PointsFalling(points) => {
-                game_core.translate_falling_points(points)
+                let rows = board.translate_falling_points(points);
+                println!("falling points cleared {:?}", rows);
+                if rows.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![BoardTransition::RowsDeleted(rows)]
+                }
             }
             BoardTransition::RowsDeleted(rows) => {
-                game_core.clear_rows(rows)
+                board.clear_rows(rows.clone());
+                self.rows_cleared(rows)
             }
         }
     }

@@ -38,6 +38,7 @@ async fn main() {
     let height = game_core::defaults::dimensions::CELL_HEIGHT;
     let mut board = game_core::board::Board::new(width, height);
 
+    /*
     let points = vec![
         // (1, 4, 1),
         // (1, 5, 1),
@@ -81,6 +82,28 @@ async fn main() {
         // (2, 9, 3),
         // (2, 8, 3),
     ];
+    */
+
+    let points = vec![
+        // (1, 0, 1),
+        // (1, 1, 1),
+        // (1, 2, 0),
+        // (1, 3, 0),
+        // (1, 4, 2),
+        // (2, 0, 3),
+        // (2, 1, 3),
+        // (3, 1, 3),
+        // (4, 1, 3),
+        // (5, 1, 3),
+        // (5, 0, 3),
+        // (4, 0, 4),
+        // (6, 0, 1),
+        // (7, 0, 5),
+        // (8, 0, 4),
+        // (8, 1, 1),
+        // (9, 0, 3),
+        // (9, 1, 1),
+        ];
 
     for (x, y, value) in points {
         board.fill_point(Point(x, y), value);
@@ -128,7 +151,7 @@ async fn main() {
 
         if transitions.is_empty() {
             if !pause {
-                driver.next_frame();
+                transitions = driver.next_frame();
             }
             
             // if is_key_pressed(KeyCode::Space) {
@@ -156,25 +179,25 @@ async fn main() {
                 driver.translate_right();
             }
             if is_key_pressed(KeyCode::Down) {
-                transitions = driver.fall();
+                transitions.append(&mut driver.fall());
             }
             if is_key_pressed(KeyCode::Up) {
-                transitions = driver.fastfall();
+                transitions.append(&mut driver.fastfall());
             }    
         } else {
             transition_elapsed += 1;
             if transition_elapsed > transition_duration {
+                println!("finished transition {:?}", transitions[0]);
                 transition_elapsed = 0;
-                if let Some(transition) = transitions.pop() {
-                    driver.finish_transition(transition)
-                }
+                let mut new_transitions = driver.finish_transition(transitions.remove(0));
+                transitions.append(&mut new_transitions);
             }
         }
 
-        tetris_board.draw(&driver, (Point(80, 10), Point(280, 410)), transitions.last(), transition_elapsed, transition_duration);
-        hold_display.draw(&driver, (Point(10, 40), Point(70, 100)), transitions.last(), transition_elapsed, transition_duration);
+        tetris_board.draw(&driver, (Point(80, 10), Point(280, 410)), transitions.first(), transition_elapsed, transition_duration);
+        hold_display.draw(&driver, (Point(10, 40), Point(70, 100)), transitions.first(), transition_elapsed, transition_duration);
         for (i, display) in queue_display.iter().enumerate() {
-            display.draw(&driver, (Point(300, 40 + 80 * i as i32), Point(360, 100 + 80 * i as i32)), transitions.last(), transition_elapsed, transition_duration);
+            display.draw(&driver, (Point(300, 40 + 80 * i as i32), Point(360, 100 + 80 * i as i32)), transitions.first(), transition_elapsed, transition_duration);
         }
 
         next_frame().await
