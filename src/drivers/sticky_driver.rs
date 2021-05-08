@@ -169,9 +169,6 @@ impl<'a> Driver<'a> for StickyDriver<'a> {
         }
     }
 
-    // TODO instead of the fastfall default thing just make the game directly return transitions.  also add a get_board_mut fn and remove the intermediate functions
-    // also keep track of using translation vs distance as terminology
-    // would faster, for the stick calculator, to explore shapes by row first, as its more cache friendly :) 
     fn fall(&mut self) -> Vec<BoardTransition> {
         // let points = self.core.get_active_tetrimino().get_points();
         let (added, mut transitions) = Driver::fall_default(self);

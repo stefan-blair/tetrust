@@ -37,11 +37,6 @@ impl TetriminoDisplay {
     }
 }
 
-/**
- *
- * TODO:: instead, get the cell size based on all of the tetriminos!
- */
-
 impl Widget for TetriminoDisplay {
     fn draw(&self, driver: &dyn Driver, area: (Point, Point), _: Option<&crate::drivers::BoardTransition>, _: usize, _: usize) {
         let game_core = driver.get_game_core();

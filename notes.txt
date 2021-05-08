@@ -10,3 +10,10 @@ the pieces have a bounding box that contains all possible rotations
 +---------+     +---------+     +---------+     +---------+
 
 etc
+
+
+// TODO instead of the fastfall default thing just make the game directly return transitions.
+// also keep track of using translation vs distance as terminology
+// would faster, for the stick calculator, to explore shapes by row first, as its more cache friendly :) 
+
+// TODO: could use a hashmap for the point -> fall mapping instead, but these are such small amounts of data that the overhead would likely be too much

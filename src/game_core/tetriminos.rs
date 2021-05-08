@@ -77,10 +77,6 @@ impl Tetrimino {
         self.wall_kicks[orientation as usize][direction as usize]
     }
 
-    pub fn get_bounding_box(&self) -> Point {
-        self.bounding_box
-    }
-
     pub fn get_points(&self) -> Vec<Point> {
         self.shapes[0]
             .iter()

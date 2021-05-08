@@ -131,8 +131,6 @@ impl Board {
         }
     }
 
-    // TODO: could use a hashmap instead, but these are such small amounts of data that the overhead would likely be too much
-    // also need to remember to remove the top rows if stuff falls out of them and they are empty now
     pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) -> Vec<i32> {
         println!("translating falling points: {:?}", point_drops);
         let mut rows = Vec::new();
