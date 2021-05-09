@@ -119,8 +119,6 @@ impl Board {
             if *self.get_row_count_mut(row - removed_rows) == self.width {
                 self.cells.remove((row - removed_rows) as usize);
                 removed_rows += 1;
-            } else {
-                println!("error: attempted to remove row that isn't full");
             }
         }
     }
@@ -132,7 +130,6 @@ impl Board {
     }
 
     pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) -> Vec<i32> {
-        println!("translating falling points: {:?}", point_drops);
         let mut rows = Vec::new();
         for (point, fall) in point_drops {
             let cell = self.get_cell_mut(point);

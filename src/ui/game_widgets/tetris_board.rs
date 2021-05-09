@@ -1,14 +1,29 @@
 use macroquad::prelude::*;
 
-use crate::drivers::{Driver, BoardTransition};
+use crate::drivers::*;
 use crate::game_core::utils::point::Point;
-use crate::ui::tiles;
-use crate::ui::widget::Widget;
+use super::tiles;
+use super::widget::{Widget, WidgetState};
 
-pub struct TetrisBoard;
+pub struct TetrisBoard {
+    area: (Point, Point)
+}
+
+impl TetrisBoard {
+    pub fn new(area: (Point, Point)) -> Self {
+        Self {
+            area
+        }
+    }
+}
 
 impl Widget for TetrisBoard {
-    fn draw(&self, driver: &dyn Driver, area: (Point, Point), transition: Option<&BoardTransition>, transition_elapsed: usize, transition_total: usize) {
+    fn draw(&self, state: WidgetState) {
+    // fn draw(&self, driver: &dyn Driver, area: (Point, Point), transition: Option<&BoardTransition>, transition_elapsed: usize, transition_total: usize) {
+        let driver = state.driver;
+        let transition = state.transition;
+        let transition_completion = (state.transition_elapsed as f32) / (state.transition_duration as f32);
+        let area = self.area;
         let game_core = driver.get_game_core();
         let dimensions = area.1 - area.0;
 
@@ -35,7 +50,7 @@ impl Widget for TetrisBoard {
             let mut alpha = 1.0;
             if let Some(BoardTransition::RowsDeleted(rows)) = transition {
                 if rows.contains(&y) {
-                    alpha = 1.0 - (transition_elapsed as f32 / transition_total as f32);
+                    alpha = 1.0 - transition_completion;
                 }
             }
 
@@ -53,7 +68,7 @@ impl Widget for TetrisBoard {
                     deleted_rows
                 };
                 // using the number of rows beneath the current row that are disappearing, calculate fall based on the elapsed frames of the animation
-                let point_fall_offset = (cell_size * point_fall) as f32 * transition_elapsed as f32 / transition_total as f32;
+                let point_fall_offset = (cell_size * point_fall) as f32 * transition_completion;
                 let point_fall_offset = Point::unit_y(point_fall_offset as i32);
                 // the point on the screen
                 let pixel = Point(

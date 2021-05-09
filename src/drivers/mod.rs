@@ -83,7 +83,6 @@ pub trait Driver<'a> {
             }
             BoardTransition::PointsFalling(points) => {
                 let rows = board.translate_falling_points(points);
-                println!("falling points cleared {:?}", rows);
                 if rows.is_empty() {
                     Vec::new()
                 } else {

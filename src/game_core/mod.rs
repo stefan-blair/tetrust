@@ -1,3 +1,4 @@
+use rand::thread_rng;
 use rand::seq::SliceRandom;
 use rand::RngCore;
 
@@ -20,8 +21,6 @@ pub struct GameCore<'a> {
     next_tetrimino_index: usize,
 
     board: board::Board,
-
-    rng: &'a mut dyn RngCore,
 }
 
 impl<'a> GameCore<'a> {
@@ -29,8 +28,8 @@ impl<'a> GameCore<'a> {
         tetrimino_types: &'a Vec<tetriminos::Tetrimino>,
         board: board::Board,
         queue_length: usize,
-        rng: &'a mut dyn RngCore,
     ) -> Self {
+        let rng = &mut thread_rng();
         let active_tetrimino = tetrimino_types
             .choose(rng)
             .unwrap()
@@ -49,7 +48,6 @@ impl<'a> GameCore<'a> {
             tetrimino_queue,
             next_tetrimino_index: 0,
             board,
-            rng,
         }
     }
 
@@ -73,6 +71,10 @@ impl<'a> GameCore<'a> {
         &self.tetrimino_queue[(self.next_tetrimino_index + index) % self.tetrimino_queue.len()]
     }
 
+    pub fn get_tetrimino_queue_length(&self) -> usize {
+        self.tetrimino_queue.len()
+    }
+
     pub fn get_tetrimino_types(&self) -> &[tetriminos::Tetrimino] {
         &self.tetrimino_types
     }
@@ -89,7 +91,7 @@ impl<'a> GameCore<'a> {
                 .with_position(self.board.get_spawn_point()),
         );
         self.tetrimino_queue[self.next_tetrimino_index] =
-            self.tetrimino_types.choose(self.rng).unwrap();
+            self.tetrimino_types.choose(&mut thread_rng()).unwrap();
         self.next_tetrimino_index = (self.next_tetrimino_index + 1) % self.tetrimino_queue.len();
     }
 

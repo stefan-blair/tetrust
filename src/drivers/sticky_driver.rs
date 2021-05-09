@@ -50,9 +50,9 @@ impl<'a> StickyDriver<'a> {
      * 
      *  That way, the widget can draw the animations
      */
-    pub fn calculate_sticky_falls(&self, lowest_point: i32) -> Vec<(Point, i32)> {
+    pub fn calculate_sticky_falls(&self, mut visit: Vec<Point>) -> Vec<(Point, i32)> {
         let board = self.core.get_board();
-        let mut visit = (0..board.get_width()).map(|x| Point(x as i32, lowest_point)).filter(|p| board.is_point_filled(*p)).collect::<Vec<_>>();
+        let lowest_point = visit.iter().map(|p| p.y()).min().unwrap();
         let mut shapes = ShapeTracker::new(lowest_point, board);
 
         let mut i = 0;
@@ -127,11 +127,7 @@ impl<'a> StickyDriver<'a> {
             *shapes.get_shape_mut(shape_index) = (shape_fall, depended_shapes);
         }
 
-
-
-        shapes.print();
         shapes.apply_dependencies();
-        shapes.print();
 
         let mut falls = Vec::new();
         for y in lowest_point..board.num_active_rows() as i32 {
@@ -149,6 +145,14 @@ impl<'a> StickyDriver<'a> {
         falls
     }
 }
+
+
+/**
+ * BUG
+ * need to make sure that it re-scans EVERY piece, not just starting from
+ * the first row pieces, after a row dissapears because it could have separated
+ * pieces from the others!!!!
+ */
 
 impl<'a> Driver<'a> for StickyDriver<'a> {
     fn get_game_core(&self) -> &GameCore<'a> {
@@ -170,15 +174,13 @@ impl<'a> Driver<'a> for StickyDriver<'a> {
     }
 
     fn fall(&mut self) -> Vec<BoardTransition> {
-        // let points = self.core.get_active_tetrimino().get_points();
+        let points = self.core.get_active_tetrimino().get_points();
         let (added, mut transitions) = Driver::fall_default(self);
         if added {
             // calculate falling points
-            let falls = self.calculate_sticky_falls(0);
-            println!("falls == {:?}", falls);
+            let falls = self.calculate_sticky_falls(points);
             if !falls.is_empty() {
                 transitions.push(BoardTransition::PointsFalling(falls));
-                println!("transitions: {:?}", transitions);
             }
         }
 
@@ -189,16 +191,31 @@ impl<'a> Driver<'a> for StickyDriver<'a> {
         let mut points = self.core.get_active_tetrimino().get_points();
         let (translation, mut transitions) = Driver::fastfall_default(self);
         points = points.into_iter().map(|p| p - Point::unit_y(translation)).collect::<Vec<_>>();
-        let falls = self.calculate_sticky_falls(0);
+        let falls = self.calculate_sticky_falls(points);
         if !falls.is_empty() {
             transitions.push(BoardTransition::PointsFalling(falls));
         }
         transitions
     }
 
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> Vec<BoardTransition> {
-        let lowest_row = rows.into_iter().min().unwrap();
-        let falls = self.calculate_sticky_falls(lowest_row);
+    fn rows_cleared(&mut self, mut rows: Vec<i32>) -> Vec<BoardTransition> {
+        rows.sort();
+        let board = self.core.get_board();
+        let mut points = Vec::new();
+        for (i, row) in rows.iter().enumerate() {
+            for x in 0..board.get_width() as i32 {
+                // get first filled point going up from (i, row)
+                let top = rows.get(i + 1).cloned().unwrap_or(board.num_active_rows() as i32);
+                let first_point = (*row..top)
+                    .map(|y| Point(x, y))
+                    .find(|p| board.is_point_filled(*p));
+                if let Some(point) = first_point {
+                    points.push(point)
+                }
+            }
+        }
+
+        let falls = self.calculate_sticky_falls(points);
         if !falls.is_empty() {
             vec![BoardTransition::PointsFalling(falls)]
         } else {
@@ -360,8 +377,6 @@ impl ShapeTracker {
         for i in 0..self.shapes.len() {
             resolve_status = self.apply_dependency(i, resolve_status);
         }
-
-        self.print();
 
         // now all the remaining dependencies are circular dependencies.  resolve those
         // shapes should be in order of discovery, so ascending

@@ -1,19 +1,20 @@
 use macroquad::prelude::*;
 
-use crate::drivers::Driver;
 use crate::game_core::tetriminos::Tetrimino;
 use crate::game_core::utils::point::Point;
 use crate::game_core::GameCore;
-use crate::ui::tiles;
-use crate::ui::widget::Widget;
+use super::tiles;
+use super::widget::*;
 
 pub struct TetriminoDisplay {
+    area: (Point, Point),
     dimensions: Point,
     extract_tetrimino: for<'a> fn(&'a GameCore) -> Option<&'a Tetrimino>,
 }
 
 impl TetriminoDisplay {
     pub fn new(
+        area: (Point, Point),
         game_core: &GameCore,
         extract_tetrimino: for<'a> fn(&'a GameCore) -> Option<&'a Tetrimino>,
     ) -> Self {
@@ -31,6 +32,7 @@ impl TetriminoDisplay {
             .unwrap();
 
         Self {
+            area,
             dimensions: Point(width, height),
             extract_tetrimino,
         }
@@ -38,7 +40,9 @@ impl TetriminoDisplay {
 }
 
 impl Widget for TetriminoDisplay {
-    fn draw(&self, driver: &dyn Driver, area: (Point, Point), _: Option<&crate::drivers::BoardTransition>, _: usize, _: usize) {
+    fn draw(&self, state: WidgetState) {
+        let area = self.area;
+        let driver = state.driver;
         let game_core = driver.get_game_core();
         let dimensions = area.1 - area.0;
 
