@@ -469,6 +469,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "macroquad-tiled"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bd057cf2f006367a287b5d59ac50d8fcd12ba5575d68f9a5e55d3f7912d81ed"
+dependencies = [
+ "macroquad",
+ "nanoserde",
+]
+
+[[package]]
 name = "macroquad_macro"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -503,6 +513,21 @@ checksum = "791daaae1ed6889560f8c4359194f56648355540573244a5448a83ba1ecc7435"
 dependencies = [
  "adler32",
 ]
+
+[[package]]
+name = "nanoserde"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ae5894adc81d64b16f75ce8a67c994a6aa4b6e1c99f2920d22e0e575755d7e9"
+dependencies = [
+ "nanoserde-derive",
+]
+
+[[package]]
+name = "nanoserde-derive"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71c29c140bb2a43bdc554ca5a34ecfe678bb6e6c6a3dc8d6856852ba2c74f20f"
 
 [[package]]
 name = "ndk"
@@ -967,6 +992,7 @@ name = "tetris"
 version = "0.1.0"
 dependencies = [
  "macroquad",
+ "macroquad-tiled",
  "rand",
 ]
 

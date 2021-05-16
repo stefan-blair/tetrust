@@ -1,29 +1,24 @@
-standard tetris board is 10 wide and 20 high
-
-
-the pieces have a bounding box that contains all possible rotations
-+---------+     +---------+     +---------+     +---------+
-| _ _ _ _ |     | _ _ # _ |     | _ _ _ _ |     | _ # _ _ |
-| # #.# # |     | _ _.# _ |     | _ _ _ _ |     | _ #._ _ |
-| _ _ _ _ |     | _ _ # _ |     | # #.# # |     | _ # _ _ |
-| _ _ _ _ |     | _ _ # _ |     | _ _ _ _ |     | _ # _ _ |
-+---------+     +---------+     +---------+     +---------+
-
-etc
-
-
 Known Issues:
     Make real graphics:
         folder organization:
             pieces
             |
-            piece_name  (S|Z|I|T|J|L|O)
-                +------- tile_0.png
-                +------- tile_1.png     (the numbers index which piece is there)
-                or 
-                +------- tile_all.png   (if all of the tiles are the same)
+            +-- gamemode_name (classic)
+                +-- piece_name  (S|Z|I|T|J|L|O)
+                    +-- tile_0.png
+                    +-- tile_1.png     (the numbers index which piece is there)
+                    or 
+                    +-- tile_all.png   (if all of the tiles are the same)
+
+    The lock delay needs to be reset whenever the current active tetrimino is switched
+
+
 
     Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
+
+    Make an option that records the game for replay (record and replay driver)
+
+    Implement scoring for everything
 
     When holding down the fall button, some double falls occur due to gravity.  have the fall button reset 
         its counter whenever an actual gravity fall happens, 
