@@ -1,6 +1,7 @@
 use macroquad::prelude::*;
 
 use super::GameState;
+use crate::ui::button::ButtonHandler;
 
 
 pub struct MenuOption {
@@ -18,20 +19,42 @@ impl MenuOption {
 
 pub struct MenuState {
     options: Vec<MenuOption>,
+    buttons: Vec<ButtonHandler<Self, Option<(usize, Vec<Box<dyn GameState>>)>>>,
     selected_option: usize,
 }
 
 impl MenuState {
-    pub fn new(options: Vec<MenuOption>) -> Self {
-        Self {
+    pub fn new(options: Vec<MenuOption>) -> Box<Self> {
+        let up_button = ButtonHandler::holdable(KeyCode::Up, 20, 2, |state: &mut Self| {
+            if state.selected_option == 0 {
+                state.selected_option = state.options.len() - 1
+            } else {
+                state.selected_option -= 1
+            }
+            None
+        });
+
+        let down_button = ButtonHandler::holdable(KeyCode::Down, 20, 2, |state: &mut Self| {
+            state.selected_option = (state.selected_option + 1) % state.options.len();
+            None
+        });
+
+        let enter_button = ButtonHandler::pressable(KeyCode::Enter, |state: &mut Self| {
+            Some((0, vec![(state.options[state.selected_option].command)()]))
+        });
+
+        let buttons = vec![up_button, down_button, enter_button];
+
+        Box::new(Self {
             options,
+            buttons,
             selected_option: 0
-        }
+        })
     }
 }
 
 impl GameState for MenuState {
-    fn next_frame(&mut self) -> (bool, Vec<Box<dyn GameState>>) {
+    fn next_frame(&mut self) -> (usize, Vec<Box<dyn GameState>>) {
         clear_background(BLACK);
 
         // draw tagline
@@ -70,18 +93,14 @@ impl GameState for MenuState {
             draw_text(&option.title, x_pos, y_pos, font_size as f32, color);
         }
 
-        if is_key_pressed(KeyCode::Up) || is_key_pressed(KeyCode::W) {
-            self.selected_option = self.selected_option.wrapping_sub(1) % self.options.len();
+        let mut buttons = std::mem::replace(&mut self.buttons, Vec::new());
+        for button in buttons.iter_mut() {
+            if let Some(state_transition) = button.update(self).flatten() {
+                return state_transition
+            }
         }
+        self.buttons = buttons;
 
-        if is_key_pressed(KeyCode::Down) || is_key_pressed(KeyCode::S) {
-            self.selected_option = (self.selected_option + 1) % self.options.len();
-        }
-
-        if is_key_pressed(KeyCode::Enter) {
-            return (false, vec![(self.options[self.selected_option].command)()])
-        }
-
-        (false, Vec::new())
+        (0, Vec::new())
     }
 }

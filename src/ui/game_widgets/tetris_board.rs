@@ -1,6 +1,5 @@
 use macroquad::prelude::*;
 
-use crate::drivers::*;
 use crate::game_core::utils::point::Point;
 use super::tiles;
 use super::widget::{Widget, WidgetState};
@@ -19,7 +18,6 @@ impl TetrisBoard {
 
 impl Widget for TetrisBoard {
     fn draw(&self, state: WidgetState) {
-    // fn draw(&self, driver: &dyn Driver, area: (Point, Point), transition: Option<&BoardTransition>, transition_elapsed: usize, transition_total: usize) {
         let driver = state.driver;
         let transition = state.transition;
         let transition_completion = (state.transition_elapsed as f32) / (state.transition_duration as f32);
@@ -32,7 +30,7 @@ impl Widget for TetrisBoard {
             area.0.y() as f32,
             dimensions.x() as f32,
             dimensions.y() as f32,
-            BLACK,
+            WHITE,
         );
 
         let cell_size = std::cmp::min(
@@ -41,16 +39,16 @@ impl Widget for TetrisBoard {
         );
 
         let active_tetrimino_points = game_core.get_active_tetrimino().get_points();
-        let ghost_tetrimino_points = game_core.get_ghost_tetriminio().get_points();
+        let ghost_tetrimino_points = game_core.get_ghost_tetriminio();
 
         // counts the number of rows under the current row that are dissapearing
         let mut deleted_rows = 0;
         // draw the tiles
         for y in 0..game_core.get_board().get_height() as i32 {
-            let mut alpha = 1.0;
-            if let Some(BoardTransition::RowsDeleted(rows)) = transition {
+            let mut row_alpha = 1.0;
+            if let Some(rows) = transition.get_rows_deleted() {
                 if rows.contains(&y) {
-                    alpha = 1.0 - transition_completion;
+                    row_alpha = 1.0 - transition_completion;
                 }
             }
 
@@ -58,7 +56,7 @@ impl Widget for TetrisBoard {
                 // the point on the board
                 let point = Point(x, y);
  
-                let point_fall = if let Some(BoardTransition::PointsFalling(points)) = transition {
+                let point_fall = if let Some(points) = transition.get_points_falling() {
                     points
                         .iter()
                         .find(|(p, _)| *p == point)
@@ -67,6 +65,14 @@ impl Widget for TetrisBoard {
                 } else {
                     deleted_rows
                 };
+
+                let mut point_alpha = row_alpha;
+                if let Some(points) = transition.get_points_deleted() {
+                    if points.contains(&point) {
+                        point_alpha = 1.0 - transition_completion;
+                    }
+                }
+
                 // using the number of rows beneath the current row that are disappearing, calculate fall based on the elapsed frames of the animation
                 let point_fall_offset = (cell_size * point_fall) as f32 * transition_completion;
                 let point_fall_offset = Point::unit_y(point_fall_offset as i32);
@@ -80,7 +86,7 @@ impl Widget for TetrisBoard {
 
                 if game_core.get_board().is_point_filled(point) {
                     let value = game_core.get_board().get_cell(point).unwrap();
-                    tiles::draw_active_tile(pixel + point_fall_offset, cell_size, value, alpha)
+                    tiles::draw_active_tile(pixel + point_fall_offset, cell_size, value, point_alpha)
                 } else if let Some((i, _)) = active_tetrimino_points
                     .iter()
                     .enumerate()
@@ -89,7 +95,7 @@ impl Widget for TetrisBoard {
                     tiles::draw_active_tile(
                         pixel, 
                         cell_size, 
-                        game_core.get_active_tetrimino().get_tetrimino().get_values()[i],
+                        game_core.get_active_tetrimino().get_tetrimino().values[i],
                         1.0
                     )
                 } else if ghost_tetrimino_points
@@ -101,7 +107,7 @@ impl Widget for TetrisBoard {
                 }
             }
 
-            if let Some(BoardTransition::RowsDeleted(rows)) = transition {
+            if let Some(rows) = transition.get_rows_deleted() {
                 if rows.contains(&y) {
                     deleted_rows += 1;
                 }
@@ -109,18 +115,3 @@ impl Widget for TetrisBoard {
         }
     }
 }
-
-/*
-        clear_background(RED);
-
-        draw_shapes();
-
-        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
-
-*/
-
-// fn draw_shapes() {
-//     draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-//     draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
-//     draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
-// }

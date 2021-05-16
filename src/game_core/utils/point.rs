@@ -1,3 +1,4 @@
+
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct Point(pub i32, pub i32);
 
@@ -12,6 +13,10 @@ impl Point {
 
     pub fn unit_y(y: i32) -> Self {
         Self(0, y)
+    }
+
+    pub fn unit_x(x: i32) -> Self {
+        Self(x, 0)
     }
 
     pub fn x(self) -> i32 {
@@ -75,3 +80,22 @@ impl Default for Point {
  */
 #[derive(Clone, Copy)]
 pub struct PartialPoint(pub f32, pub f32);
+
+impl PartialPoint {
+    pub const fn to_point(self) -> Point {
+        let mut rounded_x = self.0 as i32;
+        if rounded_x as f32 > self.0 {
+            rounded_x -= 1;
+        }
+
+        let mut rounded_y = self.1 as i32;
+        if rounded_y as f32 > self.1 {
+            rounded_y -= 1;
+        }
+        Point(rounded_x, rounded_y)
+    }
+
+    pub const fn rotate_clockwise(self) -> Self {
+        PartialPoint(self.1, -self.0)
+    }
+}

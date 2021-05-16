@@ -12,8 +12,28 @@ the pieces have a bounding box that contains all possible rotations
 etc
 
 
-// TODO instead of the fastfall default thing just make the game directly return transitions.
-// also keep track of using translation vs distance as terminology
-// would faster, for the stick calculator, to explore shapes by row first, as its more cache friendly :) 
+Known Issues:
+    Make real graphics:
+        folder organization:
+            pieces
+            |
+            piece_name  (S|Z|I|T|J|L|O)
+                +------- tile_0.png
+                +------- tile_1.png     (the numbers index which piece is there)
+                or 
+                +------- tile_all.png   (if all of the tiles are the same)
 
-// TODO: could use a hashmap for the point -> fall mapping instead, but these are such small amounts of data that the overhead would likely be too much
+    Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
+
+    When holding down the fall button, some double falls occur due to gravity.  have the fall button reset 
+        its counter whenever an actual gravity fall happens, 
+        or when the button is held down, disable gravity unless gravity is greater falling rate
+        or when the button is held down, have the gravity function return double gravity rate or something
+
+    When fall or fastfall is pressed during a lock step, right as the piece is being placed, it leads to the fastfall being 
+        applied to the next piece (so it falls right away)
+            either add a visual indicator (so you can see the lock step, and when its about to expire)
+            or, ignore fastfalls that happen for a few frames after lock step ends
+
+    Make fusion have full cascade rules, so the pieces each have their own values
+    Make cascade tetris check for overflowing values and then auto recalculate all active values back from 0

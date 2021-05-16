@@ -3,16 +3,16 @@ use macroquad::prelude::*;
 use crate::game_core::utils::point::Point;
 
 pub fn draw_active_tile(point: Point, cell_size: i32, value: u32, alpha: f32) {
-    let boarder = cell_size as f32 / 40.0;
+    let boarder = cell_size as f32 / 60.0;
     let mut color = match value {
-        1 => RED,
-        2 => BLUE,
-        3 => GREEN,
-        4 => YELLOW,
-        5 => ORANGE,
-        6 => MAGENTA,
-        7 => SKYBLUE,
-        _ => GOLD,
+        0 => RED,
+        1 => BLUE,
+        2 => GREEN,
+        3 => YELLOW,
+        4 => ORANGE,
+        5 => MAGENTA,
+        6 => SKYBLUE,
+        _ => LIGHTGRAY,
     };
 
     color.a = alpha;
@@ -27,18 +27,18 @@ pub fn draw_active_tile(point: Point, cell_size: i32, value: u32, alpha: f32) {
 }
 
 pub fn draw_empty_tile(point: Point, cell_size: i32) {
-    let boarder = cell_size as f32 / 20.0;
+    let boarder = cell_size as f32 / 60.0;
     draw_rectangle(
         point.x() as f32 + boarder,
         point.y() as f32 + boarder,
         cell_size as f32 - 2.0 * boarder,
         cell_size as f32 - 2.0 * boarder,
-        GRAY,
+        BLACK,
     );
 }
 
 pub fn draw_ghost_tile(point: Point, cell_size: i32) {
-    let boarder = cell_size as f32 / 20.0;
+    let boarder = cell_size as f32 / 60.0;
     draw_rectangle(
         point.x() as f32 + boarder,
         point.y() as f32 + boarder,

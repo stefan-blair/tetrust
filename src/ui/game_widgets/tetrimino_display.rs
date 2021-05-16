@@ -51,11 +51,12 @@ impl Widget for TetriminoDisplay {
             area.0.y() as f32,
             dimensions.x() as f32,
             dimensions.y() as f32,
-            BLACK,
+            GRAY,
         );
 
         if let Some(tetrimino) = (self.extract_tetrimino)(game_core) {
-            let points = tetrimino.get_points();
+            let tetrimino_type = tetrimino.tetrimino_type;
+            let points = tetrimino_type.get_points();
             let leftmost = points.iter().map(|p| p.x()).min().unwrap();
             let lowest = points.iter().map(|p| p.y()).min().unwrap();
 
@@ -67,7 +68,7 @@ impl Widget for TetriminoDisplay {
             let cell_size = (dimensions / self.dimensions).min(); 
             let length = self.dimensions.max();
 
-            let padding = (Point::diag(length) - tetrimino.get_dimensions()) * Point::diag(cell_size / 2);
+            let padding = (Point::diag(length) - tetrimino_type.get_dimensions()) * Point::diag(cell_size / 2);
 
             for (i, point) in points.into_iter().enumerate() {
                 // the point on the screen
@@ -75,7 +76,7 @@ impl Widget for TetriminoDisplay {
                     point.x() * cell_size + area.0.x() + padding.x(),
                     area.1.y() - (point.y() + 1) * cell_size - padding.y(),
                 );
-                tiles::draw_active_tile(pixel, cell_size, tetrimino.get_values()[i], 1.0)
+                tiles::draw_active_tile(pixel, cell_size, tetrimino.values[i], 1.0)
             }
         }
     }

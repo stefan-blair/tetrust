@@ -1,43 +1,55 @@
+#![feature(const_fn_floating_point_arithmetic)]
+
 use macroquad::prelude::*;
 
-mod drivers;
+#[macro_use]
 mod game_core;
+mod drivers;
 mod game_states;
 mod ui;
 
-use drivers::Driver;
-use game_core::utils::point::Point;
-use game_core::defaults;
+use drivers::*;
+
 use game_states::GameState;
 use game_states::menu_state::*;
 use game_states::tetris_state::*;
 
+use classic_driver::ClassicDriver;
+use cascade_driver::CascadeDriver;
+use sticky_driver::StickyDriver;
+use fusion_driver::FusionDriver;
 
-const TEST_GRAVITY: &[usize] = &[59];
 
 #[macroquad::main("TetRust")]
 async fn main() {
-    let tetrimino_types = defaults::tetriminos::tetrimino_types();
-    let width = defaults::dimensions::CELL_WIDTH;
-    let height = defaults::dimensions::CELL_HEIGHT;
-    let queue_length = game_core::defaults::settings::QUEUE_LENGTH;
-
-    let mut menu_state = MenuState::new(vec![
-        MenuOption::new("regular".to_string(), Box::new(|| Box::new(MenuState::new(vec![])))),
-        // MenuOption::new("sticky".to_string(), Box::new(move || {
-        //     let board = game_core::board::Board::new(width, height);
-        //     // initialize game engine
-        //     let core = game_core::GameCore::new(tetrimino_types_reference, board, queue_length);
-        //     let driver = Box::new(drivers::sticky_driver::StickyDriver::new(core, TEST_GRAVITY, 0.5));
-    
-        //     Box::new(TetrisState::new(driver))
-        // })),
-        MenuOption::new("cascade".to_string(), Box::new(|| Box::new(MenuState::new(vec![])))),
-        MenuOption::new("options".to_string(), Box::new(|| Box::new(MenuState::new(vec![])))),
+    let menu_state = MenuState::new(vec![
+        MenuOption::new("classic".to_string(), Box::new(move || {
+            TetrisState::new(Box::new(ClassicDriver::default()))
+        })),
+        MenuOption::new("cascade".to_string(), Box::new(move || {
+            TetrisState::new(Box::new(CascadeDriver::default()))
+        })),
+        MenuOption::new("sticky".to_string(), Box::new(move || {
+            TetrisState::new(Box::new(StickyDriver::default()))
+        })),
+        MenuOption::new("fusion".to_string(), Box::new(move || {
+            TetrisState::new(Box::new(FusionDriver::default()))
+        })),
+        MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![]))),
     ]);
 
+    let mut game_states: Vec<Box<dyn GameState>> = vec![menu_state];
+
     loop {
-        menu_state.next_frame();
+        // call the current main game state
+        let (pop, mut new_states) = game_states.last_mut().unwrap().next_frame();
+        for _ in 0..pop {
+            game_states.pop();
+        }
+ 
+        if !new_states.is_empty() {
+            game_states.append(&mut new_states);
+        }
 
         next_frame().await
     }

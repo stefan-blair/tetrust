@@ -82,8 +82,8 @@ impl Board {
         }
     }
 
-    pub fn does_tetrimino_fit(&self, tetrimino: tetriminos::ActiveTetrimino) -> bool {
-        for point in tetrimino.get_points() {
+    pub fn do_points_fit(&self, points: Vec<Point>) -> bool {
+        for point in points {
             if self.is_point_filled(point) {
                 return false;
             }
@@ -100,7 +100,7 @@ impl Board {
         let mut rows = Vec::new();
 
         for (i, point) in tetrimino.get_points().into_iter().enumerate() {
-            if !self.fill_point(point, tetrimino.get_tetrimino().get_values()[i]) {
+            if !self.fill_point(point, tetrimino.get_tetrimino().values[i]) {
                 return None;
             }
 
@@ -125,13 +125,13 @@ impl Board {
 
     pub fn clear_points(&mut self, points: &Vec<Point>) {
         for &point in points.iter() {
-            *self.get_cell_mut(point) = None
+            self.unfill_point(point);
         }
     }
 
-    pub fn translate_falling_points(&mut self, point_drops: Vec<(Point, i32)>) -> Vec<i32> {
+    pub fn translate_falling_points(&mut self, point_drops: &Vec<(Point, i32)>) -> Vec<i32> {
         let mut rows = Vec::new();
-        for (point, fall) in point_drops {
+        for (point, fall) in point_drops.into_iter().cloned() {
             let cell = self.get_cell_mut(point);
             if let Some(value) = *cell {
                 self.unfill_point(point);
@@ -159,8 +159,8 @@ impl Board {
         Point::unit_y(-down_translation)
     }
 
-    pub fn first_collision(&self, tetrimino: tetriminos::ActiveTetrimino) -> Point {
-        tetrimino.get_points()
+    pub fn first_collision(&self, points: Vec<Point>) -> Point {
+        points
             .into_iter()
             .map(|p| self.point_first_collision(p))
             .max_by_key(|p| p.y())

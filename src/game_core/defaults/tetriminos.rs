@@ -1,94 +1,92 @@
-use crate::game_core::tetriminos;
+use crate::game_core::tetriminos::*;
 use crate::game_core::utils::point::{PartialPoint, Point};
 
-type WallKickTable = [[&'static [Point]; 2]; 4];
-type TetriminoData = (&'static [PartialPoint], &'static [u32], Point, WallKickTable);
 
-pub const I_TETRIMINO: TetriminoData = (
-    &[
+pub const I_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(-1.5, 0.5),
         PartialPoint(-0.5, 0.5),
         PartialPoint(0.5, 0.5),
-        PartialPoint(1.5, 0.5),
-    ],
-    &[1, 2, 1, 1],
-    Point(-2, 1),
+        PartialPoint(1.5, 0.5)
+    ),
     I_WALL_KICKS,
+    Point(-2, 1),
+    Point(4, 1)
 );
 
-pub const T_TETRIMINO: TetriminoData = (
-    &[
+pub const T_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(-1.0, 0.0),
         PartialPoint(0.0, 0.0),
         PartialPoint(1.0, 0.0),
-        PartialPoint(0.0, 1.0),
-    ],
-    &[2, 3, 2, 2],
-    Point(-1, 1),
+        PartialPoint(0.0, 1.0)
+    ),
     OTHER_WALL_KICKS,
+    Point(-1, 1),
+    Point(3, 2),
 );
 
-pub const O_TETRIMINO: TetriminoData = (
-    &[
+pub const O_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(-0.5, 0.5),
         PartialPoint(0.5, 0.5),
         PartialPoint(-0.5, -0.5),
-        PartialPoint(0.5, -0.5),
-    ],
-    &[3, 3, 4, 3],
+        PartialPoint(0.5, -0.5)
+    ),
+    OTHER_WALL_KICKS,
     Point(-2, 0),
-    OTHER_WALL_KICKS,
+    Point(2, 2)
 );
 
-pub const S_TETRIMINO: TetriminoData = (
-    &[
+pub const S_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(1.0, 1.0),
         PartialPoint(0.0, 1.0),
         PartialPoint(0.0, 0.0),
-        PartialPoint(-1.0, 0.0),
-    ],
-    &[4, 4, 5, 5],
-    Point(-1, 1),
+        PartialPoint(-1.0, 0.0)
+    ),
     OTHER_WALL_KICKS,
+    Point(-1, 1),
+    Point(3, 2)
 );
 
-pub const Z_TETRIMINO: TetriminoData = (
-    &[
+pub const Z_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(-1.0, 1.0),
         PartialPoint(0.0, 1.0),
         PartialPoint(0.0, 0.0),
-        PartialPoint(1.0, 0.0),
-    ],
-    &[5, 6, 5, 5],
-    Point(-1, 1),
+        PartialPoint(1.0, 0.0)
+    ),
     OTHER_WALL_KICKS,
+    Point(-1, 1),
+    Point(3, 2)
 );
 
-pub const L_TETRIMINO: TetriminoData = (
-    &[
+pub const L_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(-1.0, 1.0),
         PartialPoint(1.0, 0.0),
         PartialPoint(0.0, 0.0),
-        PartialPoint(-1.0, 0.0),
-    ],
-    &[7, 7, 6, 6],
-    Point(-1, 1),
+        PartialPoint(-1.0, 0.0)
+    ),
     OTHER_WALL_KICKS,
+    Point(-1, 1),
+    Point(3, 2)
 );
 
-pub const J_TETRIMINO: TetriminoData = (
-    &[
+pub const J_TETRIMINO: TetriminoType = TetriminoType::new(
+    all_orientations!(
         PartialPoint(1.0, 1.0),
         PartialPoint(1.0, 0.0),
         PartialPoint(0.0, 0.0),
-        PartialPoint(-1.0, 0.0),
-    ],
-    &[7, 7, 1, 1],
-    Point(-1, 1),
+        PartialPoint(-1.0, 0.0)
+    ),
     OTHER_WALL_KICKS,
+    Point(-1, 1),
+    Point(3, 2)
 );
 
-pub const TETRIMINOS: &[TetriminoData] = &[
+pub const TETRIMINOS: &[TetriminoType] = &[
     I_TETRIMINO,
     T_TETRIMINO,
     O_TETRIMINO,
@@ -145,12 +143,3 @@ pub const OTHER_WALL_KICKS: [[&[Point]; 2]; 4] = [
         &[Point(-1, 0), Point(-1, -1), Point(0, 2), Point(-1, 2)],
     ],
 ];
-
-pub fn tetrimino_types() -> Vec<tetriminos::Tetrimino> {
-    TETRIMINOS
-        .iter()
-        .map(|(shape, values, bounding_box, wall_kicks)| {
-            tetriminos::Tetrimino::new(shape, values.to_vec(), *wall_kicks, *bounding_box)
-        })
-        .collect::<Vec<_>>()
-}
