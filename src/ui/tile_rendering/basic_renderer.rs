@@ -12,7 +12,7 @@ impl<'a> TileRenderManager<'a> for BasicRenderManager {
 
     fn get_rendering_state(&mut self, widget_state: WidgetState<'a>) -> Self::R {
         let transition_completion = (widget_state.transition_elapsed as f32) / (widget_state.transition_duration as f32);        
-        BasicRenderer::new(widget_state.driver.get_game_core(), widget_state.transition, 1.0 - transition_completion)
+        BasicRenderer::new(widget_state.driver.get_game_core(), widget_state.transition, transition_completion)
     }
 }
 
@@ -20,16 +20,16 @@ pub struct BasicRenderer<'a> {
     game_core: &'a GameCore,
     active_tetrimino_points: Vec<Point>,
     transition: &'a BoardTransition,
-    alpha: f32,
+    transition_completion: f32
 }
 
 impl<'a> BasicRenderer<'a> {
-    fn new(game_core: &'a GameCore, transition: &'a BoardTransition, alpha: f32) -> Self {
+    fn new(game_core: &'a GameCore, transition: &'a BoardTransition, transition_completion: f32) -> Self {
         Self {
             game_core,
             active_tetrimino_points: game_core.get_active_tetrimino().get_points(),
             transition,
-            alpha
+            transition_completion
         }
     }
 }
@@ -58,14 +58,14 @@ impl<'a> TileRenderer for BasicRenderer<'a> {
                     .iter()
                     .find(|&&y| y == point.y())
                     .is_some()) {
-                alpha = self.alpha
+                alpha = 1.0 - self.transition_completion;
             } else if self.transition
                 .get_points_deleted()
                 .map_or(false, |points| points
                     .iter()
                     .find(|&&p| p == point)
                     .is_some()) {
-                alpha = self.alpha
+                alpha = 1.0 - self.transition_completion;
             }
         } else if let Some((i, _)) = self.active_tetrimino_points
             .iter()
@@ -101,6 +101,29 @@ impl<'a> TileRenderer for BasicRenderer<'a> {
         }
 
         if let Some(value) = active_tile_value {
+            let mut deleted_rows = 0;
+
+            if let Some(rows) = self.transition.get_rows_deleted() {
+                if rows.contains(&point.y()) {
+                    deleted_rows += 1;
+                }
+            }
+
+            let point_fall = if let Some(points) = self.transition.get_points_falling() {
+                points
+                    .iter()
+                    .find(|(p, _)| *p == point)
+                    .map(|(_, f)| *f)
+                    .unwrap_or(0)
+            } else {
+                deleted_rows
+            };
+
+            // using the number of rows beneath the current row that are disappearing, calculate fall based on the elapsed frames of the animation
+            let point_fall_offset = (cell_size * point_fall) as f32 * self.transition_completion;
+            let point_fall_offset = Point::unit_y(point_fall_offset as i32);
+            let pixel = pixel + point_fall_offset;
+
             let mut color = match value {
                 0 => RED,
                 1 => BLUE,
