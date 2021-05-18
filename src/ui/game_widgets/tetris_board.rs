@@ -21,9 +21,9 @@ impl Widget for TetrisBoard {
     fn draw(&self, state: WidgetState) {
         let mut render_manager = BasicRenderManager;
 
+        let mut rendering_state = render_manager.get_rendering_state(state);
+
         let driver = state.driver;
-        let transition = state.transition;
-        let transition_completion = (state.transition_elapsed as f32) / (state.transition_duration as f32);
         let area = self.area;
         let game_core = driver.get_game_core();
         let dimensions = area.1 - area.0;
@@ -52,7 +52,7 @@ impl Widget for TetrisBoard {
                     area.0.y() + (game_core.get_board().get_height() as i32 - y - 1) * cell_size,
                 );
 
-                render_manager.get_rendering_state(state).render_tile(point, pixel, cell_size);
+                rendering_state.render_tile(point, pixel, cell_size);
             }
         }
     }

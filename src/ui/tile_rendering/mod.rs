@@ -5,6 +5,10 @@ pub mod basic_renderer;
 
 
 pub trait TileRenderer {
+    /**
+     * This will be called on each piece on the board starting from (0, 0) to
+     * (width, height), going by row.
+     */
     fn render_tile(&mut self, tile: Point, pixel: Point, cell_size: i32);
 }
 

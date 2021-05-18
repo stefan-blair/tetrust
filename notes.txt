@@ -10,9 +10,7 @@ Known Issues:
                     or 
                     +-- tile_all.png   (if all of the tiles are the same)
 
-    The lock delay needs to be reset whenever the current active tetrimino is switched
-
-
+    The ghost pieces are lagging sometimes (like when against a wall)
 
     Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
 
@@ -32,3 +30,7 @@ Known Issues:
 
     Make fusion have full cascade rules, so the pieces each have their own values
     Make cascade tetris check for overflowing values and then auto recalculate all active values back from 0
+
+
+    The lock delay needs to be reset whenever the current active tetrimino is switched
+        -- this seems to be fixed

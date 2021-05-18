@@ -328,6 +328,7 @@ impl Driver for DefaultDriver {
         if self.can_hold {
             self.core.hold();
             self.can_hold = false;
+            self.lock_delayed = false;
         }
     }
 

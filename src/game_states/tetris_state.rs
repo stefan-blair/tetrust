@@ -157,6 +157,9 @@ impl GameState for TetrisState {
             }
         }
 
+        // make sure all arrays are sorted and deduped
+        self.transition.compress();
+
         let widget_state = WidgetState {
             driver: self.driver.as_ref(),
             transition: &self.transition,
