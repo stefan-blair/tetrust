@@ -2,27 +2,23 @@ use macroquad::prelude::*;
 
 use crate::game_core::utils::point::Point;
 use super::widget::{Widget, WidgetState};
-use crate::ui::tile_rendering::*;
+use crate::ui::rendering::*;
 
 
 pub struct TetrisBoard {
     area: (Point, Point),
-    render_manager: Box<dyn TileRenderManager>
 }
 
 impl TetrisBoard{
-    pub fn new(area: (Point, Point), render_manager: Box<dyn TileRenderManager>) -> Self {
+    pub fn new(area: (Point, Point)) -> Self {
         Self {
             area,
-            render_manager
         }
     }
 }
 
 impl Widget for TetrisBoard {
-    fn draw(&mut self, state: WidgetState) {
-        let mut rendering_state = self.render_manager.get_rendering_state(state);
-
+    fn draw<'a>(&mut self, state: WidgetState, mut rendering_state: Box<dyn TileRenderer + 'a>) {
         let driver = state.driver;
         let area = self.area;
         let game_core = driver.get_game_core();
@@ -52,7 +48,7 @@ impl Widget for TetrisBoard {
                     area.0.y() + (game_core.get_board().get_height() as i32 - y - 1) * cell_size,
                 );
 
-                rendering_state.render_tile(point, pixel, cell_size);
+                rendering_state.render_tile_at(point, pixel, cell_size);
             }
         }
     }

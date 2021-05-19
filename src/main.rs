@@ -19,7 +19,7 @@ use cascade_driver::CascadeDriver;
 use sticky_driver::StickyDriver;
 use fusion_driver::FusionDriver;
 
-use ui::tile_rendering::basic_tileset_renderer::BasicTilesetRenderManager;
+use ui::rendering::basic_tileset_renderer::BasicTilesetRenderManager;
 
 
 #[macroquad::main("TetRust")]

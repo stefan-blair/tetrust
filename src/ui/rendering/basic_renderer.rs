@@ -43,7 +43,7 @@ impl<'a> BasicRenderer<'a> {
 }
 
 impl<'a> TileRenderer for BasicRenderer<'a> {
-    fn render_tile(&mut self, point: Point, pixel: Point, cell_size: i32) {
+    fn render_tile_at(&mut self, point: Point, pixel: Point, cell_size: i32) {
         // if the current tile is on a new row, update the rows deleted
         if point.y() > self.last_y {
             self.last_y = point.y();
@@ -138,27 +138,31 @@ impl<'a> TileRenderer for BasicRenderer<'a> {
             let point_fall_offset = (cell_size * point_fall) as f32 * self.transition_completion;
             let point_fall_offset = Point::unit_y(point_fall_offset as i32);
             let pixel = pixel + point_fall_offset;
-
-            let mut color = match value {
-                0 => RED,
-                1 => BLUE,
-                2 => GREEN,
-                3 => YELLOW,
-                4 => ORANGE,
-                5 => MAGENTA,
-                6 => SKYBLUE,
-                _ => LIGHTGRAY,
-            };
-        
-            color.a = alpha;
-        
-            draw_rectangle(
-                pixel.x() as f32 + boarder,
-                pixel.y() as f32 + boarder,
-                cell_size as f32 - 2.0 * boarder,
-                cell_size as f32 - 2.0 * boarder,
-                color,
-            );    
+            self.render_tile(pixel, cell_size, value, alpha);
         }
+    }
+
+    fn render_tile(&mut self, pixel: Point, cell_size: i32, value: u32, alpha: f32) {
+        let boarder = cell_size as f32 / 80.0;
+        let mut color = match value {
+            0 => RED,
+            1 => BLUE,
+            2 => GREEN,
+            3 => YELLOW,
+            4 => ORANGE,
+            5 => MAGENTA,
+            6 => SKYBLUE,
+            _ => LIGHTGRAY,
+        };
+    
+        color.a = alpha;
+    
+        draw_rectangle(
+            pixel.x() as f32 + boarder,
+            pixel.y() as f32 + boarder,
+            cell_size as f32 - 2.0 * boarder,
+            cell_size as f32 - 2.0 * boarder,
+            color,
+        );
     }
 }

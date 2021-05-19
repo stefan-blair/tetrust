@@ -60,7 +60,7 @@ impl<'a> BasicTilesetRenderer<'a> {
 }
 
 impl<'a> TileRenderer for BasicTilesetRenderer<'a> {
-    fn render_tile(&mut self, point: Point, pixel: Point, cell_size: i32) {
+    fn render_tile_at(&mut self, point: Point, pixel: Point, cell_size: i32) {
         // if the current tile is on a new row, update the rows deleted
         if point.y() > self.last_y {
             self.last_y = point.y();
@@ -155,29 +155,32 @@ impl<'a> TileRenderer for BasicTilesetRenderer<'a> {
             let point_fall_offset = (cell_size * point_fall) as f32 * self.transition_completion;
             let point_fall_offset = Point::unit_y(point_fall_offset as i32);
             let pixel = pixel + point_fall_offset;
-
-            let rect = self.tile_map.tiles[value as usize % self.tile_map.tiles.len()];
-            let dest_size = cell_size as f32;
-
-            let mut color = WHITE;
-            color.a = alpha;
-
-            draw_texture_ex(
-                self.tile_map.tileset,
-                pixel.x() as f32,
-                pixel.y() as f32,
-                color,
-                DrawTextureParams {
-                    dest_size: Some(vec2(dest_size, dest_size)),
-                    source: Some(Rect::new(
-                        rect.x as f32,
-                        rect.y as f32,
-                        rect.dim as f32,
-                        rect.dim as f32
-                    )),
-                    ..Default::default()
-                },
-            );
+            self.render_tile(pixel, cell_size, value, alpha);
         }
+    }
+
+    fn render_tile(&mut self, pixel: Point, cell_size: i32, value: u32, alpha: f32) {
+        let rect = self.tile_map.tiles[value as usize % self.tile_map.tiles.len()];
+        let dest_size = cell_size as f32;
+
+        let mut color = WHITE;
+        color.a = alpha;
+
+        draw_texture_ex(
+            self.tile_map.tileset,
+            pixel.x() as f32,
+            pixel.y() as f32,
+            color,
+            DrawTextureParams {
+                dest_size: Some(vec2(dest_size, dest_size)),
+                source: Some(Rect::new(
+                    rect.x as f32,
+                    rect.y as f32,
+                    rect.dim as f32,
+                    rect.dim as f32
+                )),
+                ..Default::default()
+            },
+        );
     }
 }

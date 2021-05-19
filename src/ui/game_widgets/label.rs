@@ -3,6 +3,7 @@ use macroquad::prelude::*;
 use super::widget::*;
 use crate::drivers::Driver;
 use crate::game_core::utils::point::Point;
+use crate::ui::rendering::*;
 
 
 pub struct Label {
@@ -29,7 +30,7 @@ impl Label {
 }
 
 impl Widget for Label {
-    fn draw(&mut self, state: WidgetState) {
+    fn draw<'a>(&mut self, state: WidgetState, _: Box<dyn TileRenderer + 'a>) {
         let text = (self.extract_string)(state.driver);
         draw_text(&text, self.location.x() as f32, self.location.y() as f32, self.font_size, self.color);
     }
