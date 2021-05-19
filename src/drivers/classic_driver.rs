@@ -17,10 +17,10 @@ impl Default for ClassicDriver {
 }
 
 impl ClassicDriver {
-    pub fn _new(core: GameCore, get_gravity: fn(usize) -> f32, lock_delay: usize) -> Self {
+    pub fn new(default_driver: DefaultDriver) -> Self {
         Self {
             last_clear_was_tetris: false,
-            default_driver: DefaultDriver::new(core, get_gravity, lock_delay)
+            default_driver
         }
     }
 

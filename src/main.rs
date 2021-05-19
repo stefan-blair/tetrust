@@ -18,6 +18,8 @@ use classic_driver::ClassicDriver;
 use cascade_driver::CascadeDriver;
 use sticky_driver::StickyDriver;
 use fusion_driver::FusionDriver;
+use debugging::recording::RecordingDriver;
+use debugging::replaying::ReplayingDriver;
 
 use ui::rendering::basic_tileset_renderer::BasicTilesetRenderManager;
 
@@ -31,10 +33,11 @@ async fn main() {
     let render_2 = basic_tileset_renderer.clone();
     let render_3 = basic_tileset_renderer.clone();
     let render_4 = basic_tileset_renderer.clone();
+    let render_5 = basic_tileset_renderer.clone();
 
     let menu_state = MenuState::new(vec![
         MenuOption::new("classic".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(ClassicDriver::default()), basic_tileset_renderer.clone())
+            TetrisState::new(Box::new(RecordingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), basic_tileset_renderer.clone())
         })),
         MenuOption::new("cascade".to_string(), Box::new(move || {
             TetrisState::new(Box::new(CascadeDriver::default()), render_2.clone())
@@ -45,6 +48,9 @@ async fn main() {
         MenuOption::new("fusion".to_string(), Box::new(move || {
             TetrisState::new(Box::new(FusionDriver::default()), render_4.clone())
         })),
+        MenuOption::new("replay".to_string(), Box::new(move || {
+            TetrisState::new(Box::new(ReplayingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), render_5.clone())
+        })),        
         MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![]))),
     ]);
 

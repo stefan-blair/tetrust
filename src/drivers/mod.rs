@@ -10,6 +10,7 @@ pub mod classic_driver;
 pub mod sticky_driver;
 pub mod cascade_driver;
 pub mod fusion_driver;
+pub mod debugging;
 
 
 #[derive(Default, Clone, Debug)]
@@ -383,7 +384,8 @@ pub struct DefaultDriverBuilder {
     queue_length: usize,
     tetriminos: &'static[TetriminoType],
     lock_delay: usize,
-    get_gravity: fn(usize) -> f32
+    get_gravity: fn(usize) -> f32,
+    tetrimino_generator: Option<Box<dyn TetriminoGenerator>>
 }
 
 impl DefaultDriverBuilder {
@@ -394,20 +396,26 @@ impl DefaultDriverBuilder {
             queue_length: defaults::settings::QUEUE_LENGTH,
             tetriminos: defaults::tetriminos::TETRIMINOS,
             lock_delay: 120,
-            get_gravity: defaults::gravity::calculate_gravity
+            get_gravity: defaults::gravity::calculate_gravity,
+            tetrimino_generator: None
         }
     }
 
-    pub fn build(&self) -> DefaultDriver {
+    pub fn build(&mut self) -> DefaultDriver {
         let board = Board::new(self.width, self.height);
         // initialize the game engine
         let core = GameCore::new(
             self.tetriminos,
             board,
             self.queue_length,
-            BasicGenerator::new(self.tetriminos));
+            self.tetrimino_generator.take().unwrap_or(BasicGenerator::new(self.tetriminos)));
 
         DefaultDriver::new(core, self.get_gravity, self.lock_delay)
+    }
+
+    pub fn with_tetrimino_generator(mut self, tetrimino_generator: Box<dyn TetriminoGenerator>) -> Self {
+        self.tetrimino_generator = Some(tetrimino_generator);
+        self
     }
 
     pub fn _with_width(mut self, width: usize) -> Self {

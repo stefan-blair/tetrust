@@ -27,6 +27,7 @@ pub trait TetriminoGenerator {
     fn next(&mut self) -> Tetrimino;
 }
 
+#[derive(Debug)]
 pub struct TetriminoType {
     // an array of shapes, one for each orientation
     shapes: [&'static [Point]; Orientation::COUNT],
