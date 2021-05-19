@@ -40,7 +40,7 @@ impl TetriminoDisplay {
 }
 
 impl Widget for TetriminoDisplay {
-    fn draw(&self, state: WidgetState) {
+    fn draw(&mut self, state: WidgetState) {
         let area = self.area;
         let driver = state.driver;
         let game_core = driver.get_game_core();

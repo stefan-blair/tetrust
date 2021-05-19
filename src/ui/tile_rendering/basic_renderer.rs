@@ -7,12 +7,14 @@ use crate::drivers::BoardTransition;
 
 pub struct BasicRenderManager;
 
-impl<'a> TileRenderManager<'a> for BasicRenderManager {
-    type R = BasicRenderer<'a>;
-
-    fn get_rendering_state(&mut self, widget_state: WidgetState<'a>) -> Self::R {
+impl TileRenderManager for BasicRenderManager {
+    fn get_rendering_state<'a>(&'a mut self, widget_state: WidgetState<'a>) -> Box<dyn TileRenderer + 'a> {
         let transition_completion = (widget_state.transition_elapsed as f32) / (widget_state.transition_duration as f32);        
-        BasicRenderer::new(widget_state.driver.get_game_core(), widget_state.transition, transition_completion)
+        Box::new(
+            BasicRenderer::new(
+                widget_state.driver.get_game_core(), 
+                widget_state.transition, 
+                transition_completion))
     }
 }
 
@@ -52,7 +54,7 @@ impl<'a> TileRenderer for BasicRenderer<'a> {
             }
         }
 
-        let boarder = cell_size as f32 / 60.0;
+        let boarder = cell_size as f32 / 80.0;
         // draw an empty rectangle first, to fill the blank square
         draw_rectangle(
             pixel.x() as f32 + boarder,

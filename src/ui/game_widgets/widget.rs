@@ -11,5 +11,5 @@ pub struct WidgetState<'a> {
 }
 
 pub trait Widget {
-    fn draw(&self, state: WidgetState);
+    fn draw(&mut self, state: WidgetState);
 }

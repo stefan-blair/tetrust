@@ -29,7 +29,7 @@ impl Label {
 }
 
 impl Widget for Label {
-    fn draw(&self, state: WidgetState) {
+    fn draw(&mut self, state: WidgetState) {
         let text = (self.extract_string)(state.driver);
         draw_text(&text, self.location.x() as f32, self.location.y() as f32, self.font_size, self.color);
     }

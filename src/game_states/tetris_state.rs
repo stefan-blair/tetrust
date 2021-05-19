@@ -12,6 +12,7 @@ use crate::ui::game_widgets::tetrimino_display::TetriminoDisplay;
 use crate::ui::game_widgets::label::Label;
 use crate::ui::game_widgets::widget::*;
 use crate::ui::button::ButtonHandler;
+use crate::ui::tile_rendering::*;
 
 
 const HOLD_DELAY: usize = 15;
@@ -34,10 +35,10 @@ pub struct TetrisState {
 }
 
 impl TetrisState {
-    pub fn new(driver: Box<dyn Driver>) -> Box<Self> {
+    pub fn new(driver: Box<dyn Driver>, render_manager: Box<dyn TileRenderManager>) -> Box<Self> {
         let board_dimensions = Point((screen_height() * 0.8 * 0.5) as i32, 10 + (screen_height() * 0.8) as i32);
         let board_position = Point((screen_width() as i32 - board_dimensions.x()) / 2, (screen_height() as i32 - board_dimensions.y()) / 2);
-        let tetris_board = TetrisBoard::new((board_position, board_position + board_dimensions));
+        let tetris_board = TetrisBoard::new((board_position, board_position + board_dimensions), render_manager);
         
         /*
          * Create all of the widgets for displaying the game.
@@ -167,7 +168,7 @@ impl GameState for TetrisState {
             transition_elapsed: self.transition_elapsed
         };
 
-        for widget in self.widgets.iter() {
+        for widget in self.widgets.iter_mut() {
             widget.draw(widget_state)
         }
 

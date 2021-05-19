@@ -19,21 +19,31 @@ use cascade_driver::CascadeDriver;
 use sticky_driver::StickyDriver;
 use fusion_driver::FusionDriver;
 
+use ui::tile_rendering::basic_tileset_renderer::BasicTilesetRenderManager;
+
 
 #[macroquad::main("TetRust")]
 async fn main() {
+    let basic_tileset_renderer = Box::new(
+        BasicTilesetRenderManager::new(
+            "res/basic_tilemap.png", 
+            "res/basic_tilemap_info.json").await);
+    let render_2 = basic_tileset_renderer.clone();
+    let render_3 = basic_tileset_renderer.clone();
+    let render_4 = basic_tileset_renderer.clone();
+
     let menu_state = MenuState::new(vec![
         MenuOption::new("classic".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(ClassicDriver::default()))
+            TetrisState::new(Box::new(ClassicDriver::default()), basic_tileset_renderer.clone())
         })),
         MenuOption::new("cascade".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(CascadeDriver::default()))
+            TetrisState::new(Box::new(CascadeDriver::default()), render_2.clone())
         })),
         MenuOption::new("sticky".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(StickyDriver::default()))
+            TetrisState::new(Box::new(StickyDriver::default()), render_3.clone())
         })),
         MenuOption::new("fusion".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(FusionDriver::default()))
+            TetrisState::new(Box::new(FusionDriver::default()), render_4.clone())
         })),
         MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![]))),
     ]);
