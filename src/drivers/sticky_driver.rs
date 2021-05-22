@@ -2,8 +2,8 @@ use rand::thread_rng;
 use rand::Rng;
 
 use crate::drivers::*;
-use crate::game_core::GameCore;
 use crate::game_core::utils::point::Point;
+use crate::game_core::defaults;
 use super::utils::recursive_physics::*;
 use super::utils::tetrimino_chooser::TetriminoChooser;
 
@@ -37,96 +37,78 @@ impl TetriminoGenerator for StickyGenerator {
 
         tetrimino_type.instance(values)
     }
+
+    fn get_tetrimino_types(&self) -> &'static [TetriminoType] {
+        self.tetrimino_chooser.get_tetrimino_types()
+    }
 }
 
 pub struct StickyDriver {
-    default_driver: DefaultDriver
+    driver_core: DriverCore
 }
 
-impl Default for StickyDriver {
-    fn default() -> Self {
+impl BuildableDriver for StickyDriver {
+    type Data = ();
+
+    fn initialize(builder: DriverBuilder<Self>) -> DriverBuilder<Self> {
+        builder
+            .with_tetrimino_generator(
+                StickyGenerator::new(defaults::tetriminos::TETRIMINOS))
+    }
+ 
+    fn build(mut builder: DriverBuilder<Self>) -> Self {
         Self {
-            default_driver: DefaultDriverBuilder::new().build()
+            driver_core: builder.build_core()
         }
     }
 }
 
-impl StickyDriver {
-    pub fn _new(core: GameCore, get_gravity: fn(usize) -> f32, lock_delay: usize) -> Self {
-        Self {
-            default_driver: DefaultDriver::new(core, get_gravity, lock_delay)
-        }
-    }
-}
 
 impl Driver for StickyDriver {
-    fn get_generator(tetrimino_types: &'static [TetriminoType]) -> Box<dyn TetriminoGenerator> {
-        StickyGenerator::new(tetrimino_types)
+    fn get_driver_core(&self) -> &DriverCore {
+        &self.driver_core
     }
 
-    fn get_game_core(&self) -> &GameCore {
-        self.default_driver.get_game_core()
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore {
+        &mut self.driver_core
     }
 
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        self.default_driver.get_game_core_mut()
-    }
-
-    fn get_score(&self) -> usize {
-        self.default_driver.get_score()
-    }
-
-    fn get_level(&self) -> usize {
-        self.default_driver.get_level()
-    }
-
-    fn next_frame(&mut self) -> BoardTransition {
-        self.default_driver.next_frame()
-    }
-
-    fn hold(&mut self) {
-        self.default_driver.hold()
-    }
-
-    fn fall(&mut self) -> (bool, BoardTransition) {
+    fn fall(&mut self) -> BoardTransition {
         let points = self.get_game_core().get_active_tetrimino().get_points();
-        let (added, mut transitions) = self.default_driver.fall();
+        let (added, mut transitions) = self.driver_core.fall();
         if added {
             // calculate falling points
             let falls = calculate_sticky_falls(self.get_game_core().get_board(), points);
             if !falls.is_empty() {
-                transitions.add_to_transition(BoardTransition::new().with_points_falling(falls))
+                transitions.add_points_falling(falls)
             }
         }
 
-        (added, transitions)
+        transitions
     }
 
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
+    fn fastfall(&mut self) -> BoardTransition {
         let mut points = self.get_game_core().get_active_tetrimino().get_points();
-        let (translation, mut transitions) = self.default_driver.fastfall();
+        let (translation, mut transitions) = self.driver_core.fastfall();
         points = points.into_iter().map(|p| p - Point::unit_y(translation)).collect::<Vec<_>>();
         let falls = calculate_sticky_falls(self.get_game_core().get_board(), points);
         if !falls.is_empty() {
-            transitions.add_to_transition(BoardTransition::new().with_points_falling(falls));
+            transitions.add_points_falling(falls);
         }
-        (translation, transitions)
+        
+        transitions
     }
 
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> BoardTransition {
-        let falls = calculate_sticky_falls_from_rows(self.get_game_core().get_board(), rows);
-        if !falls.is_empty() {
-            BoardTransition::new().with_points_falling(falls)
-        } else {
-            BoardTransition::new()
+    fn finish_transition(&mut self, transition: BoardTransition) -> BoardTransition { 
+        let (cleared_rows, _, mut new_transitions) = self.driver_core.finish_transition(transition);
+
+        if let Some(rows) = cleared_rows {
+            let falls = calculate_sticky_falls_from_rows(self.driver_core.core.get_board(), rows);
+            if !falls.is_empty() {
+                new_transitions.add_points_falling(falls)
+            }
         }
-    }
 
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition {
-        self.default_driver.points_cleared(points)
-    }
-
-    fn points_fell(&mut self, points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        self.default_driver.points_fell(points, full_rows)
+        new_transitions
     }
 }

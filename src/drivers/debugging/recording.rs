@@ -3,29 +3,7 @@ use std::io::prelude::*;
 use serde::{Serialize, Deserialize};
 
 use crate::drivers::*;
-use crate::game_core::GameCore;
 
-
-pub struct RecordingGenerator {
-    tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser
-}
-
-impl RecordingGenerator {
-    pub fn new(tetrimino_types: &'static [TetriminoType]) -> Box<Self> {
-        Box::new(Self {
-            tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser::new(tetrimino_types)
-                .with_seed(Vec::new())
-        })
-    }
-}
-
-impl TetriminoGenerator for RecordingGenerator {
-    fn next(&mut self) -> Tetrimino {
-        let (index, tetrimino_type) = self.tetrimino_type_chooser.choose_tetrimino_type();
-        let values = vec![index as u32; 4];
-        tetrimino_type.instance(values)
-    }
-}
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Action {
@@ -74,44 +52,36 @@ impl<'a> RecordingDriver<'a> {
 }
 
 impl<'a> Driver for RecordingDriver<'a> {
-    fn get_generator(tetrimino_types: &'static [TetriminoType]) -> Box<dyn TetriminoGenerator> where Self: Sized{
-        RecordingGenerator::new(tetrimino_types)
+    fn get_driver_core(&self) -> &DriverCore {
+        self.wrapped.get_driver_core()
     }
 
-    fn get_game_core(&self) -> &GameCore {
-        self.wrapped.get_game_core()
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore {
+        self.wrapped.get_driver_core_mut()
     }
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        self.wrapped.get_game_core_mut()
-    }
-    fn get_score(&self) -> usize {
-        self.wrapped.get_score()
-    }
-    fn get_level(&self) -> usize {
-        self.wrapped.get_level()
-    }
+
     fn next_frame(&mut self) -> BoardTransition {
         self.current_frame += 1;
 
         self.wrapped.next_frame()
     }
 
-    fn translate_left(&mut self) -> bool {
+    fn translate_left(&mut self) {
         self.push_action(Action::TranslateLeft);
 
         self.wrapped.translate_left()
     }
-    fn translate_right(&mut self) -> bool {
+    fn translate_right(&mut self) {
         self.push_action(Action::TranslateRight);
 
         self.wrapped.translate_right()
     }
-    fn rotate_clockwise(&mut self) -> bool {
+    fn rotate_clockwise(&mut self) {
         self.push_action(Action::RotateClockwise);
 
         self.wrapped.rotate_clockwise()
     }
-    fn rotate_counterclockwise(&mut self) -> bool {
+    fn rotate_counterclockwise(&mut self) {
         self.push_action(Action::RotateCounterClockwise);
 
         self.wrapped.rotate_counterclockwise()
@@ -122,28 +92,16 @@ impl<'a> Driver for RecordingDriver<'a> {
         self.wrapped.hold()
     }
 
-    fn fall(&mut self) -> (bool, BoardTransition) {
+    fn fall(&mut self) -> BoardTransition {
         self.push_action(Action::Fall);
         
         self.wrapped.fall()
     }
 
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
+    fn fastfall(&mut self) -> BoardTransition {
         self.push_action(Action::Fastfall);
 
         self.wrapped.fastfall()
-    }
-
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> BoardTransition {
-        self.wrapped.rows_cleared(rows)
-    }
-
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition {
-        self.wrapped.points_cleared(points)
-    }
-
-    fn points_fell(&mut self, points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        self.wrapped.points_fell(points, full_rows)
     }
 
     fn finish_transition(&mut self, transition: BoardTransition) -> BoardTransition {

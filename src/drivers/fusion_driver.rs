@@ -1,4 +1,3 @@
-use crate::game_core::tetriminos::*;
 use crate::game_core::utils::point::*;
 use crate::game_core::defaults::tetriminos::*;
 use super::utils::recursive_physics::calculate_sticky_falls_from_rows;
@@ -28,18 +27,43 @@ pub const TETRIMINOS: &[TetriminoType] = &[
 pub const FUSION_TETRIMINO_INDEX: usize = TETRIMINOS.len() - 1;
 
 pub struct FusionDriver {
-    default_driver: DefaultDriver,
+    driver_core: DriverCore,
     sink: Point,
 }
 
-impl Default for FusionDriver {
-    fn default() -> Self {
+#[derive(Default)]
+pub struct FusionDriverBuilderData {
+    sink: Point,
+    junk: Vec<Point>
+}
+
+impl BuildableDriver for FusionDriver {
+    type Data = FusionDriverBuilderData;
+
+    fn initialize(builder: DriverBuilder<Self>) -> DriverBuilder<Self> {
+        builder
+            .with_tetrimino_generator(BasicGenerator::new(TETRIMINOS))
+    }
+
+    fn build(mut builder: DriverBuilder<Self>) -> Self where Self: Sized {
+        // use the junk to populate the board
         Self {
-            sink: Point(0, 0),
-            default_driver: DefaultDriverBuilder::new()
-                .with_tetriminos(TETRIMINOS)
-                .build()
+            sink: builder.cont.sink,
+            driver_core: builder
+                .build_core()
         }
+    }
+}
+
+impl DriverBuilder<FusionDriver> {
+    pub fn _with_sink(mut self, sink: Point) -> Self {
+        self.cont.sink = sink;
+        self
+    }
+
+    pub fn _with_junk(mut self, junk: Vec<Point>) -> Self {
+        self.cont.junk = junk;
+        self
     }
 }
 
@@ -50,7 +74,7 @@ impl FusionDriver {
      * containing all of the points
      */
     fn extract_fusion_points(&self, mut transitions: BoardTransition) -> BoardTransition {
-        let board = self.default_driver.core.get_board();
+        let board = self.driver_core.core.get_board();
 
         if let Some(rows) = transitions.take_rows_deleted() {
             let mut deleted_rows = Vec::new();
@@ -62,7 +86,7 @@ impl FusionDriver {
                 // get all of the non-fusion points. if it does not total to the width, then a fusion piece was found
                 let mut non_fusion_points = Vec::new();
                 non_fusion_points.reserve(board.get_width());
-                for point in (0..board.get_width()).map(|x| Point(x as i32, row as i32)) {
+                for point in (0..board.get_width()).map(|x| Point(x as i32, row)) {
                     if board.get_cell(point).unwrap() != FUSION_TETRIMINO_INDEX as u32 {
                         non_fusion_points.push(point);
                     }
@@ -75,9 +99,8 @@ impl FusionDriver {
                 }
             }
 
-            transitions.add_to_transition(BoardTransition::new()
-                .with_points_deleted(deleted_points)
-                .with_rows_deleted(deleted_rows));
+            transitions.add_points_deleted(deleted_points);
+            transitions.add_rows_deleted(deleted_rows);
         }
 
         transitions
@@ -85,67 +108,49 @@ impl FusionDriver {
 }
 
 impl Driver for FusionDriver {
-    fn get_generator(tetrimino_types: &'static [TetriminoType]) -> Box<dyn TetriminoGenerator> {
-        BasicGenerator::new(tetrimino_types)
+    fn get_driver_core(&self) -> &DriverCore {
+        &self.driver_core
     }
 
-    fn get_game_core(&self) -> &GameCore {
-        self.default_driver.get_game_core()
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore {
+        &mut self.driver_core
     }
 
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        self.default_driver.get_game_core_mut()
-    }
-
-    fn get_score(&self) -> usize {
-        self.default_driver.get_score()
-    }
-
-    fn get_level(&self) -> usize {
-        self.default_driver.get_level()
-    }
-
-    fn hold(&mut self) {
-        self.default_driver.hold()
-    }
-
-    fn next_frame(&mut self) -> BoardTransition {
-        if self.default_driver.process_frame() {
-            self.fall().1
+    fn fall(&mut self) -> BoardTransition {
+        let (added, transitions) = self.driver_core.fall();
+        if added {
+            self.extract_fusion_points(transitions)
         } else {
-            BoardTransition::new()
+            transitions
         }
     }
 
-    fn fall(&mut self) -> (bool, BoardTransition) {
-        let (added, transitions) = self.default_driver.fall();
-        (added, self.extract_fusion_points(transitions))
+    fn fastfall(&mut self) -> BoardTransition {
+        let transition = self.driver_core.fastfall().1;
+        self.extract_fusion_points(transition)
     }
 
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
-        let (translation, transitions) = self.default_driver.fastfall();
-        (translation, self.extract_fusion_points(transitions))
-    }
+    fn finish_transition(&mut self, transition: BoardTransition) -> BoardTransition { 
+        let (cleared_rows, cleared_points, mut new_transitions) = self.driver_core.finish_transition(transition);
 
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> BoardTransition {
-        // let falls = calculate_sticky_falls_from_rows(self.get_game_core().get_board(), rows);
-        // if !falls.is_empty() {
-        //     vec![BoardTransition::PointsFalling(falls)]
-        // } else {
-            BoardTransition::new()
-        // }
-    }
+        if let Some(rows) = cleared_rows {
+    //     // let falls = calculate_sticky_falls_from_rows(self.get_game_core().get_board(), rows);
+    //     // if !falls.is_empty() {
+    //     //     vec![BoardTransition::PointsFalling(falls)]
+    //     // } else {
+    //         BoardTransition::new()
+    //     // }
+        }
 
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition {
-        let mut rows = points.into_iter().map(|p| p.y()).collect::<Vec<_>>();
-        rows.sort();
-        rows.dedup();
+        if let Some(points) = cleared_points {
+            let mut rows = points.into_iter().map(|p| p.y()).collect::<Vec<_>>();
+            rows.sort();
+            rows.dedup();
 
-        let falls = calculate_sticky_falls_from_rows(self.get_game_core().get_board(), rows);
-        BoardTransition::new().with_points_falling(falls)
-    }
+            let falls = calculate_sticky_falls_from_rows(self.get_game_core().get_board(), rows);
+            new_transitions.add_points_falling(falls);
+        }
 
-    fn points_fell(&mut self, _points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        self.extract_fusion_points(BoardTransition::new().with_rows_deleted(full_rows))
+        return self.extract_fusion_points(new_transitions);
     }
 }

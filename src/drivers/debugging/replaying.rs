@@ -1,9 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
-use serde::{Serialize, Deserialize};
 
 use crate::drivers::*;
-use crate::game_core::GameCore;
 use super::recording::*;
 
 
@@ -35,22 +33,14 @@ impl<'a> ReplayingDriver<'a> {
 }
 
 impl<'a> Driver for ReplayingDriver<'a> {
-    fn get_generator(tetrimino_types: &'static [TetriminoType]) -> Box<dyn TetriminoGenerator> where Self: Sized{
-        RecordingGenerator::new(tetrimino_types)
+    fn get_driver_core(&self) -> &DriverCore {
+        self.wrapped.get_driver_core()
     }
 
-    fn get_game_core(&self) -> &GameCore {
-        self.wrapped.get_game_core()
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore {
+        self.wrapped.get_driver_core_mut()
     }
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        self.wrapped.get_game_core_mut()
-    }
-    fn get_score(&self) -> usize {
-        self.wrapped.get_score()
-    }
-    fn get_level(&self) -> usize {
-        self.wrapped.get_level()
-    }
+
     fn next_frame(&mut self) -> BoardTransition {
         let mut transitions = self.wrapped.next_frame();
 
@@ -68,10 +58,10 @@ impl<'a> Driver for ReplayingDriver<'a> {
                 Action::RotateCounterClockwise => { self.wrapped.rotate_counterclockwise(); }
                 Action::Hold => self.wrapped.hold(),
                 Action::Fastfall => {
-                    transitions.add_to_transition(self.wrapped.fastfall().1);
+                    transitions.add_from_transition(self.wrapped.fastfall());
                 },
                 Action::Fall => {
-                    transitions.add_to_transition(self.wrapped.fall().1);
+                    transitions.add_from_transition(self.wrapped.fall());
                 },
             }
         }
@@ -79,32 +69,24 @@ impl<'a> Driver for ReplayingDriver<'a> {
         transitions
     }
 
-    fn translate_left(&mut self) -> bool {
+    fn translate_left(&mut self){
         if self.actions.is_empty() {
             self.wrapped.translate_left()
-        } else {
-            false
         }
     }
-    fn translate_right(&mut self) -> bool {
+    fn translate_right(&mut self){
         if self.actions.is_empty() {
             self.wrapped.translate_right()
-        } else {
-            false
         }
     }
-    fn rotate_clockwise(&mut self) -> bool {
+    fn rotate_clockwise(&mut self){
         if self.actions.is_empty() {
             self.wrapped.rotate_clockwise()
-        } else {
-            false
         }
     }
-    fn rotate_counterclockwise(&mut self) -> bool {
+    fn rotate_counterclockwise(&mut self){
         if self.actions.is_empty() {
             self.wrapped.rotate_counterclockwise()
-        } else {
-            false
         }
     }
     fn hold(&mut self) {
@@ -113,32 +95,20 @@ impl<'a> Driver for ReplayingDriver<'a> {
         }
     }
 
-    fn fall(&mut self) -> (bool, BoardTransition) {
+    fn fall(&mut self) -> BoardTransition {
         if self.actions.is_empty() {
             self.wrapped.fall()
         } else {
-            (false, BoardTransition::new())
+            BoardTransition::new()
         }
     }
 
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
+    fn fastfall(&mut self) -> BoardTransition {
         if self.actions.is_empty() {
             self.wrapped.fastfall()
         } else {
-            (0, BoardTransition::new())
+            BoardTransition::new()
         }
-    }
-
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> BoardTransition {
-        self.wrapped.rows_cleared(rows)
-    }
-
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition {
-        self.wrapped.points_cleared(points)
-    }
-
-    fn points_fell(&mut self, points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        self.wrapped.points_fell(points, full_rows)
     }
 
     fn finish_transition(&mut self, transition: BoardTransition) -> BoardTransition {

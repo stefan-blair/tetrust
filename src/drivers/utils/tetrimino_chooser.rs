@@ -1,6 +1,6 @@
 use rand::thread_rng;
 use rand::seq::SliceRandom;
-use rand::{Rng, SeedableRng, rngs::StdRng, RngCore};
+use rand::{SeedableRng, rngs::StdRng, RngCore};
 
 use crate::game_core::tetriminos::*;
 
@@ -38,6 +38,10 @@ impl TetriminoChooser {
         self
     }
 
+    pub fn get_tetrimino_types(&self) -> &'static [TetriminoType] {
+        self.tetrimino_types
+    }
+
     pub fn get_seed(&self) -> Option<&Vec<u8>> {
         self.seed.as_ref()
     }
@@ -47,7 +51,6 @@ impl TetriminoChooser {
 
         // if there is a specific seeded rng, use that, otherwise use the thread rng
         let rng: &mut dyn RngCore = if let Some(rng) = self.seeded_rng.as_mut() {
-            println!("using seeded");
             rng
         } else {
             trng
@@ -56,26 +59,8 @@ impl TetriminoChooser {
         if self.current_bucket.is_empty() {
             self.current_bucket = self.tetrimino_types.iter().enumerate().collect();
             self.current_bucket.shuffle(rng);
-            println!("current bucket: {:?}", self.current_bucket.iter().map(|(i, _)| i).collect::<Vec<_>>());
         }
 
         self.current_bucket.pop().unwrap()
-    }
-}
-
-#[cfg(test)]
-mod tetrimino_chooser_seeded_random_tests {
-    use super::*;
-
-    #[test]
-    fn test_seeded_random() {
-        let seed_array: [u8; 32] = [0; 32];
-        let mut seeded_rng: StdRng = SeedableRng::from_seed(seed_array);
-
-        for _ in 0..10 {
-            println!("num: {:?}", seeded_rng.gen::<usize>());
-        }
-
-        assert!(false);
     }
 }

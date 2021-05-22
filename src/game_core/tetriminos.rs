@@ -25,6 +25,7 @@ type CellValueType = u32;
 
 pub trait TetriminoGenerator {
     fn next(&mut self) -> Tetrimino;
+    fn get_tetrimino_types(&self) -> &'static [TetriminoType];
 }
 
 #[derive(Debug)]

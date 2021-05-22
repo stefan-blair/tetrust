@@ -12,178 +12,180 @@ pub mod cascade_driver;
 pub mod fusion_driver;
 pub mod debugging;
 
+pub use utils::board_transition::*;
 
-#[derive(Default, Clone, Debug)]
-pub struct BoardTransition {
-    points_deleted: Option<Vec<Point>>,
-    rows_deleted: Option<Vec<i32>>,
-    points_falling: Option<Vec<(Point, i32)>>
-}
-
-impl BoardTransition {
-    pub fn new() -> Self {
-        Self {
-            ..Default::default()
-        }
-    }
-
-    pub fn add_to_transition(&mut self, mut other: BoardTransition) {
-        if let Some(mut other_points_deleted) = other.points_deleted.take() {
-            if let Some(points_deleted) = self.points_deleted.as_mut() {
-                points_deleted.append(&mut other_points_deleted);
-            } else {
-                self.points_deleted = Some(other_points_deleted);
-            }
-        }
-
-        if let Some(mut other_rows_deleted) = other.rows_deleted.take() {
-            if let Some(rows_deleted) = self.rows_deleted.as_mut() {
-                rows_deleted.append(&mut other_rows_deleted);
-            } else {
-                self.rows_deleted = Some(other_rows_deleted);
-            }
-        }
-
-        if let Some(mut other_points_falling) = other.points_falling.take() {
-            if let Some(points_falling) = self.points_falling.as_mut() {
-                points_falling.append(&mut other_points_falling);
-            } else {
-                self.points_falling = Some(other_points_falling);
-            }
-        }
-    }
-
-    pub fn with_points_deleted(mut self, points_deleted: Vec<Point>) -> Self {
-        if !points_deleted.is_empty() {
-            self.points_deleted = Some(points_deleted);
-        }
-        self
-    }
-
-    pub fn with_rows_deleted(mut self, rows_deleted: Vec<i32>) -> Self {
-        if !rows_deleted.is_empty() {
-            self.rows_deleted = Some(rows_deleted);
-        }
-        self
-    }
-
-    pub fn with_points_falling(mut self, points_falling: Vec<(Point, i32)>) -> Self {
-        if !points_falling.is_empty() {
-            self.points_falling = Some(points_falling);
-        }
-        self
-    }
-
-    /**
-     * Sorts and deduplicates all vectors of transitions.
-     */
-    pub fn compress(&mut self) {
-        if let Some(points_deleted) = self.points_deleted.as_mut() {
-            points_deleted.sort_by_key(|p| (p.y(), p.x()));
-            points_deleted.dedup();    
-        }
-
-        if let Some(rows_deleted) = self.rows_deleted.as_mut() {
-            rows_deleted.sort();
-            rows_deleted.dedup();    
-        }
-
-        if let Some(points_falling) = self.points_falling.as_mut() {
-            points_falling.sort_by_key(|(p, d)| (p.y(), *d, p.x()));
-            points_falling.dedup();    
-        }
-    }
-
-    pub fn get_points_deleted(&self) -> Option<&Vec<Point>> {
-        self.points_deleted.as_ref()
-    }
-
-    pub fn get_rows_deleted(&self) -> Option<&Vec<i32>> {
-        self.rows_deleted.as_ref()
-    }
-
-    pub fn get_points_falling(&self) -> Option<&Vec<(Point, i32)>> {
-        self.points_falling.as_ref()
-    }
-
-    pub fn take_points_deleted(&mut self) -> Option<Vec<Point>> {
-        self.points_deleted.take()
-    }
-
-    pub fn take_rows_deleted(&mut self) -> Option<Vec<i32>> {
-        self.rows_deleted.take()
-    }
-
-    pub fn take_points_falling(&mut self) -> Option<Vec<(Point, i32)>> {
-        self.points_falling.take()
-    }
-
-    pub fn is_inert(&self) -> bool {
-        self.points_deleted.is_none() && self.points_falling.is_none() && self.rows_deleted.is_none()
-    }
-}
-
-pub struct BasicGenerator {
-    tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser
-}
-
-impl BasicGenerator {
-    pub fn new(tetrimino_types: &'static [TetriminoType]) -> Box<Self> {
-        Box::new(Self {
-            tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser::new(tetrimino_types)
-        })
-    }
-}
-
-impl TetriminoGenerator for BasicGenerator {
-    fn next(&mut self) -> Tetrimino {
-        let (index, tetrimino_type) = self.tetrimino_type_chooser.choose_tetrimino_type();
-        let values = vec![index as u32; 4];
-        tetrimino_type.instance(values)
-    }
-}
 
 pub trait Driver {
-    fn get_generator(tetrimino_types: &'static [TetriminoType]) -> Box<dyn TetriminoGenerator> where Self: Sized{
-        BasicGenerator::new(tetrimino_types)
+    fn get_driver_core(&self) -> &DriverCore;
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore;
+
+    /*
+     * Basic getters.
+     */
+    fn get_game_core(&self) -> &GameCore {
+        &self.get_driver_core().core
+    }
+    fn get_game_core_mut(&mut self) -> &mut GameCore {
+        &mut self.get_driver_core_mut().core
+    }
+    fn get_score(&self) -> usize {
+        self.get_driver_core().score
+    }
+    fn get_level(&self) -> usize {
+        self.get_driver_core().level
     }
 
-    fn get_game_core(&self) -> &GameCore;
-    fn get_game_core_mut(&mut self) -> &mut GameCore;
-    fn get_score(&self) -> usize;
-    fn get_level(&self) -> usize;
+    /*
+     * Engine for getting the next frame.
+     */
+    fn next_frame(&mut self) -> BoardTransition {
+        if self.get_driver_core_mut().process_frame() {
+            self.fall()
+        } else {
+            BoardTransition::new()
+        }
+    }
 
-    fn next_frame(&mut self) -> BoardTransition;
+    /*
+     * Controllable interactions.
+     */
+    fn translate_left(&mut self) {
+        self.get_driver_core_mut().translate_left();
+    }
+
+    fn translate_right(&mut self) {
+        self.get_driver_core_mut().translate_right();
+    }
+
+    fn rotate_clockwise(&mut self) {
+        self.get_driver_core_mut().rotate_clockwise();
+    }
+
+    fn rotate_counterclockwise(&mut self) {
+        self.get_driver_core_mut().rotate_counterclockwise();
+    }
+    fn hold(&mut self) {
+        self.get_driver_core_mut().hold()
+    }
+
+    fn fall(&mut self) -> BoardTransition {
+        self.get_driver_core_mut().fall().1
+    }
+
+    fn fastfall(&mut self) -> BoardTransition {
+        self.get_driver_core_mut().fastfall().1
+    }
+
+
+    fn finish_transition(&mut self, _: BoardTransition) -> BoardTransition;
+}
+
+/**
+ * Contains basic functionality that all drivers will share.
+ */
+pub struct DriverCore {
+    core: GameCore,
+
+    frames_since_drop: f32,
+    get_gravity: fn(usize) -> f32,
+
+    level: usize,
+    score: usize,
+
+    lock_delay: usize,
+    frames_since_lock_delay: usize,
+    lock_delayed: bool,
+
+    can_hold: bool
+}
+
+impl DriverCore {
+    /**
+     * Processes another frame, and returns a boolean indicating if a piece should fall 
+     */
+    pub fn process_frame(&mut self) -> bool {
+        if self.lock_delayed {
+            self.frames_since_lock_delay += 1;
+            if self.frames_since_lock_delay > self.lock_delay {
+                self.lock_delayed = false;
+                return true
+            }            
+        } else {
+            self.frames_since_drop += 1.0;
+            let gravity = (self.get_gravity)(self.level);
+            while self.frames_since_drop > gravity {
+                self.frames_since_drop = 0.0;
+                if !self.core.try_fall() {
+                    self.lock_delayed = true;
+                    self.frames_since_lock_delay = 0;
+                    break;
+                }
+            }
+        }
+
+        false
+    }
 
     fn translate_left(&mut self) -> bool {
-        self.get_game_core_mut().translate(Point(-1, 0))
+        self.core.translate(Point(-1, 0))
     }
 
     fn translate_right(&mut self) -> bool {
-        self.get_game_core_mut().translate(Point(1, 0))
+        self.core.translate(Point(1, 0))
     }
 
     fn rotate_clockwise(&mut self) -> bool {
-        self.get_game_core_mut().rotate(Direction::Clockwise)
+        self.core.rotate(Direction::Clockwise)
     }
 
     fn rotate_counterclockwise(&mut self) -> bool {
-        self.get_game_core_mut().rotate(Direction::CounterClockwise)
+        self.core.rotate(Direction::CounterClockwise)
     }
-    
-    fn hold(&mut self);
-    fn fall(&mut self) -> (bool, BoardTransition);
-    fn fastfall(&mut self) -> (i32, BoardTransition);
-    fn rows_cleared(&mut self, _: Vec<i32>) -> BoardTransition;
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition;
-    fn points_fell(&mut self, points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition;
 
-    fn finish_transition(&mut self, mut transition: BoardTransition) -> BoardTransition{
+    fn hold(&mut self) {
+        if self.can_hold {
+            self.core.hold();
+            self.can_hold = false;
+            self.lock_delayed = false;
+        }
+    }
+
+    fn fall(&mut self) -> (bool, BoardTransition) {
+        self.lock_delayed = false;
+        let tetrimino_points = self.core.get_active_tetrimino().get_points();
+        let (added, rows_deleted) = self.core.fall();
+
+        let mut transition = BoardTransition::new()
+            .with_rows_deleted(rows_deleted.unwrap_or(Vec::new()));
+
+        if added {
+            self.can_hold = true;
+            transition.add_points_added(tetrimino_points);
+        }
+
+        (added, transition)
+    }
+
+    fn fastfall(&mut self) -> (i32, BoardTransition) {
+        self.lock_delayed = false;
+        self.can_hold = true;
+ 
+        let tetrimino_points = self.core.get_active_tetrimino().get_points();
+        let (translation, rows_deleted) = self.core.fastfall();
+
+        let transition = BoardTransition::new()
+            .with_points_added(tetrimino_points)
+            .with_rows_deleted(rows_deleted.unwrap_or(Vec::new()));
+
+        (translation, transition)
+    }
+
+    fn finish_transition(&mut self, mut transition: BoardTransition) -> (Option<Vec<i32>>, Option<Vec<Point>>, BoardTransition) {
         let mut chain_transition = BoardTransition::new();
 
         let mut deleted_rows = None;
         if let Some(mut rows) = transition.get_rows_deleted().cloned() {
-            let board = self.get_game_core_mut().get_board_mut();
+            let board = self.core.get_board_mut();
             board.clear_rows(rows.clone());
             rows.sort();
             for i in 0..rows.len() {
@@ -210,207 +212,112 @@ pub trait Driver {
                 }
             }
 
-            let board = self.get_game_core_mut().get_board_mut();
+            let board = self.core.get_board_mut();
             board.clear_points(&points);
             deleted_points = Some(points);
         }
 
         if let Some(points) = transition.take_points_falling() {
-            let board = self.get_game_core_mut().get_board_mut();
-            let rows = board.translate_falling_points(&points);
+            let board = self.core.get_board_mut();
+            let full_rows = board.translate_falling_points(&points);
 
-            chain_transition.add_to_transition(self.points_fell(points, rows));
+            chain_transition.add_rows_deleted(full_rows);
         }
 
-        if let Some(rows) = deleted_rows {
-            chain_transition.add_to_transition(self.rows_cleared(rows));
-        }
-
-        if let Some(points) = deleted_points {
-            chain_transition.add_to_transition(self.points_cleared(points));
-        }
-
-        chain_transition
+        (deleted_rows, deleted_points, chain_transition)
     }
 }
 
-/**
- * Default implementation of the Driver trait. Classic tetris can directly use
- * this driver. Can be extended / wrapped for more interesting versions of
- * tetris, or ignored completely.
- */
-pub struct DefaultDriver {
-    core: GameCore,
-
-    frames_since_drop: f32,
-    get_gravity: fn(usize) -> f32,
-
-    level: usize,
-    score: usize,
-
-    lock_delay: usize,
-    frames_since_lock_delay: usize,
-    lock_delayed: bool,
-
-    can_hold: bool
+pub struct BasicGenerator {
+    tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser
 }
 
-impl DefaultDriver {
-    pub fn new(core: GameCore, get_gravity: fn(usize) -> f32, lock_delay: usize) -> Self {
-        Self {
+impl BasicGenerator {
+    pub fn new(tetrimino_types: &'static [TetriminoType]) -> Box<Self> {
+        Box::new(Self {
+            tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser::new(tetrimino_types)
+        })
+    }
+}
+
+impl TetriminoGenerator for BasicGenerator {
+    fn next(&mut self) -> Tetrimino {
+        let (index, tetrimino_type) = self.tetrimino_type_chooser.choose_tetrimino_type();
+        let values = vec![index as u32; 4];
+        tetrimino_type.instance(values)
+    }
+
+    fn get_tetrimino_types(&self) -> &'static [TetriminoType] {
+        self.tetrimino_type_chooser.get_tetrimino_types()
+    }
+}
+
+pub trait BuildableDriver {
+    type Data: Default;
+
+    fn initialize(builder: DriverBuilder<Self>) -> DriverBuilder<Self> where Self: Sized {
+        builder
+    }
+
+    fn build(builder: DriverBuilder<Self>) -> Self where Self: Sized;
+}
+
+pub struct DriverBuilder<T: BuildableDriver> {
+    width: usize,
+    height: usize,
+    queue_length: usize,
+    lock_delay: usize,
+    get_gravity: fn(usize) -> f32,
+    tetrimino_generator: Option<Box<dyn TetriminoGenerator>>,
+
+    cont: T::Data
+}
+
+impl<T: BuildableDriver> DriverBuilder<T> {
+    pub fn new() -> Self {
+        T::initialize(Self {
+            width: defaults::dimensions::CELL_WIDTH,
+            height: defaults::dimensions::CELL_HEIGHT,
+            queue_length: defaults::settings::QUEUE_LENGTH,
+            lock_delay: 120,
+            get_gravity: defaults::gravity::calculate_gravity,
+            tetrimino_generator: None,
+
+            cont: Default::default()
+        })
+    }
+
+    pub fn build(self) -> T {
+        T::build(self)
+    }
+
+    pub fn build_boxed(self) -> Box<T> {
+        Box::new(self.build())
+    }
+
+    pub fn build_core(&mut self) -> DriverCore {
+        let board = Board::new(self.width, self.height);
+        // initialize the game engine
+        let core = GameCore::new(
+            board,
+            self.queue_length,
+            self.tetrimino_generator.take().unwrap_or(BasicGenerator::new(defaults::tetriminos::TETRIMINOS)));
+
+        DriverCore {
             core,
 
-            get_gravity,
+            get_gravity: self.get_gravity,
             frames_since_drop: 0.0,
 
             level: 0,
             score: 0,
 
-            lock_delay,
+            lock_delay: self.lock_delay,
             frames_since_lock_delay: 0,
             lock_delayed: false,
 
             can_hold: true,
         }
-    }
-
-    /**
-     * Processes another frame, and returns a boolean indicating if the 
-     */
-    pub fn process_frame(&mut self) -> bool {
-        if self.lock_delayed {
-            self.frames_since_lock_delay += 1;
-            if self.frames_since_lock_delay > self.lock_delay {
-                self.lock_delayed = false;
-                return true
-            }            
-        } else {
-            self.frames_since_drop += 1.0;
-            let gravity = (self.get_gravity)(self.level);
-            while self.frames_since_drop > gravity {
-                self.frames_since_drop = 0.0;
-                if !self.get_game_core_mut().try_fall() {
-                    self.lock_delayed = true;
-                    self.frames_since_lock_delay = 0;
-                    break;
-                }
-            }
-        }
-
-        false
-    }
-}
-
-impl Driver for DefaultDriver {
-    fn get_game_core(&self) -> &GameCore {
-        &self.core
-    }
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        &mut self.core
-    }
-
-    fn get_score(&self) -> usize {
-        self.score
-    }
-
-    fn get_level(&self) -> usize {
-        self.level
-    }
-
-    fn next_frame(&mut self) -> BoardTransition {
-        if self.process_frame() {
-            self.fall().1
-        } else {
-            BoardTransition::new()
-        }
-    }
-
-    fn hold(&mut self) {
-        if self.can_hold {
-            self.core.hold();
-            self.can_hold = false;
-            self.lock_delayed = false;
-        }
-    }
-
-    fn fall(&mut self) -> (bool, BoardTransition) {
-        self.lock_delayed = false;
-        let game_core = self.get_game_core_mut();
-        let (added, rows) = game_core.fall();
-        if let Some(rows) = rows {
-            if !rows.is_empty() {
-                return (true, BoardTransition::new().with_rows_deleted(rows));
-            }
-        }
-
-        if added {
-            self.can_hold = true;
-        }
-
-        (added, BoardTransition::new())
-    }
-
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
-        self.lock_delayed = false;
-        self.can_hold = true;
- 
-        let game_core = self.get_game_core_mut();
-        let (translation, rows) = game_core.fastfall();
-        if let Some(rows) = rows {
-            if !rows.is_empty() {
-                return (translation, BoardTransition::new().with_rows_deleted(rows))
-            }
-        }
-        (translation, BoardTransition::new())
-    }
-
-    fn rows_cleared(&mut self, _rows: Vec<i32>) -> BoardTransition {
-        BoardTransition::new()
-    }
-
-    fn points_cleared(&mut self, _points: Vec<Point>) -> BoardTransition {
-        BoardTransition::new()
-    }
-
-    fn points_fell(&mut self, _points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        BoardTransition::new()
-            .with_rows_deleted(full_rows)
-    }
-}
-
-pub struct DefaultDriverBuilder {
-    width: usize,
-    height: usize,
-    queue_length: usize,
-    tetriminos: &'static[TetriminoType],
-    lock_delay: usize,
-    get_gravity: fn(usize) -> f32,
-    tetrimino_generator: Option<Box<dyn TetriminoGenerator>>
-}
-
-impl DefaultDriverBuilder {
-    pub fn new() -> Self {
-        Self {
-            width: defaults::dimensions::CELL_WIDTH,
-            height: defaults::dimensions::CELL_HEIGHT,
-            queue_length: defaults::settings::QUEUE_LENGTH,
-            tetriminos: defaults::tetriminos::TETRIMINOS,
-            lock_delay: 120,
-            get_gravity: defaults::gravity::calculate_gravity,
-            tetrimino_generator: None
-        }
-    }
-
-    pub fn build(&mut self) -> DefaultDriver {
-        let board = Board::new(self.width, self.height);
-        // initialize the game engine
-        let core = GameCore::new(
-            self.tetriminos,
-            board,
-            self.queue_length,
-            self.tetrimino_generator.take().unwrap_or(BasicGenerator::new(self.tetriminos)));
-
-        DefaultDriver::new(core, self.get_gravity, self.lock_delay)
     }
 
     pub fn with_tetrimino_generator(mut self, tetrimino_generator: Box<dyn TetriminoGenerator>) -> Self {
@@ -435,11 +342,6 @@ impl DefaultDriverBuilder {
 
     pub fn _with_lock_delay(mut self, lock_delay: usize) -> Self {
         self.lock_delay = lock_delay;
-        self
-    }
-
-    pub fn with_tetriminos(mut self, tetriminos: &'static [TetriminoType]) -> Self {
-        self.tetriminos = tetriminos;
         self
     }
 

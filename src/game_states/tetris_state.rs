@@ -97,14 +97,14 @@ impl TetrisState {
         let left = ButtonHandler::holdable(KeyCode::Left, HOLD_DELAY, HOLD_RATE, |state: &mut TetrisState| { state.driver.translate_left(); });
         let right = ButtonHandler::holdable(KeyCode::Right, HOLD_DELAY, HOLD_RATE, |state: &mut TetrisState| { state.driver.translate_right(); });
         let down = ButtonHandler::holdable(KeyCode::Down, HOLD_DELAY, HOLD_RATE, |state: &mut TetrisState| { 
-            let (added, new_transition) = state.driver.fall();
+            let new_transition = state.driver.fall();
             state.transition = new_transition;
-            if added {
+            if state.transition.get_points_added().is_some() {
                 state.reset_button_holds = true;
             }
         });
         let fastfall = ButtonHandler::pressable(KeyCode::Up, |state: &mut TetrisState| {                 
-            let new_transition = state.driver.fastfall().1;
+            let new_transition = state.driver.fastfall();
             state.transition = new_transition;
         });
 

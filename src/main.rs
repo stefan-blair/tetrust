@@ -37,20 +37,32 @@ async fn main() {
 
     let menu_state = MenuState::new(vec![
         MenuOption::new("classic".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(RecordingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), basic_tileset_renderer.clone())
+            TetrisState::new(
+                DriverBuilder::<ClassicDriver>::new()
+                    .build_boxed(),
+                basic_tileset_renderer.clone()
+            )
+            // TetrisState::new(Box::new(RecordingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), basic_tileset_renderer.clone())
         })),
         MenuOption::new("cascade".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(CascadeDriver::default()), render_2.clone())
+            TetrisState::new(
+                DriverBuilder::<CascadeDriver>::new().build_boxed(), 
+                render_2.clone())
         })),
         MenuOption::new("sticky".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(StickyDriver::default()), render_3.clone())
+            TetrisState::new(
+                DriverBuilder::<StickyDriver>::new().build_boxed(), 
+                render_3.clone())
         })),
         MenuOption::new("fusion".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(FusionDriver::default()), render_4.clone())
+            TetrisState::new(
+                DriverBuilder::<FusionDriver>::new().build_boxed(), 
+                render_4.clone())
         })),
-        MenuOption::new("replay".to_string(), Box::new(move || {
-            TetrisState::new(Box::new(ReplayingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), render_5.clone())
-        })),        
+        // MenuOption::new("replay".to_string(), Box::new(move || {
+        //     TetrisState::new(Box::new(ReplayingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), 
+        //     render_5.clone())
+        // })),
         MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![]))),
     ]);
 

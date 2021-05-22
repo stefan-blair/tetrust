@@ -10,7 +10,6 @@ use utils::orientations::*;
 
 
 pub struct GameCore {
-    tetrimino_types: &'static[TetriminoType],
     active_tetrimino: ActiveTetrimino,
     ghost_tetrimino: Vec<Point>,
     held_tetrimino: Option<Tetrimino>,
@@ -25,7 +24,6 @@ pub struct GameCore {
 
 impl GameCore {
     pub fn new(
-        tetrimino_types: &'static[TetriminoType],
         board: board::Board,
         queue_length: usize,
         mut tetrimino_generator: Box<dyn TetriminoGenerator>
@@ -39,7 +37,6 @@ impl GameCore {
             .collect::<Vec<_>>();
 
         Self {
-            tetrimino_types,
             ghost_tetrimino: active_tetrimino.get_points(),
             active_tetrimino,
             held_tetrimino: None,
@@ -75,7 +72,7 @@ impl GameCore {
     }
 
     pub fn get_tetrimino_types(&self) -> &[TetriminoType] {
-        self.tetrimino_types
+        self.tetrimino_generator.get_tetrimino_types()
     }
 
     // returns the old active tetrimino

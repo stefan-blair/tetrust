@@ -1,95 +1,62 @@
 use crate::drivers::*;
-use crate::game_core::GameCore;
 
 
 pub struct ClassicDriver {
     last_clear_was_tetris: bool,
-    default_driver: DefaultDriver,
-}
-
-impl Default for ClassicDriver {
-    fn default() -> Self {
-        Self {
-            last_clear_was_tetris: false,
-            default_driver: DefaultDriverBuilder::new().build()
-        }
-    }
+    driver_core: DriverCore,
 }
 
 impl ClassicDriver {
-    pub fn new(default_driver: DefaultDriver) -> Self {
-        Self {
-            last_clear_was_tetris: false,
-            default_driver
+    fn update_score(&mut self, increment: usize) {
+        self.driver_core.score += increment;
+        let level = self.driver_core.score / 5;
+        if self.driver_core.level < level && level < 15 {
+            self.driver_core.level = level;
         }
     }
+}
 
-    fn update_score(&mut self, increment: usize) {
-        self.default_driver.score += increment;
-        let level = self.default_driver.score / 5;
-        if self.default_driver.level < level && level < 15 {
-            self.default_driver.level = level;
+impl BuildableDriver for ClassicDriver {
+    type Data = ();
+
+    fn build(mut builder: DriverBuilder<Self>) -> Self where Self: Sized {
+        ClassicDriver {
+            last_clear_was_tetris: false,
+            driver_core: builder.build_core()
         }
     }
 }
 
 impl Driver for ClassicDriver {
-    fn get_game_core(&self) -> &GameCore {
-        self.default_driver.get_game_core()
+    fn get_driver_core(&self) -> &DriverCore {
+        &self.driver_core
     }
 
-    fn get_game_core_mut(&mut self) -> &mut GameCore {
-        self.default_driver.get_game_core_mut()
+    fn get_driver_core_mut(&mut self) -> &mut DriverCore {
+        &mut self.driver_core
     }
 
-    fn get_score(&self) -> usize {
-        self.default_driver.get_score()
-    }
+    fn finish_transition(&mut self, transition: BoardTransition) -> BoardTransition { 
+        let (cleared_rows, _, new_transition) = self.driver_core.finish_transition(transition); 
 
-    fn get_level(&self) -> usize {
-        self.default_driver.get_level()
-    }
+        if let Some(rows) = cleared_rows {
+            let score_update = match rows.len() {
+                1 => 1,
+                2 => 3,
+                3 => 5,
+                4 => if self.last_clear_was_tetris {
+                        12
+                    } else {
+                        self.last_clear_was_tetris = true;
+                        8
+                    }
+                _ => 0
+            };
+    
+            self.last_clear_was_tetris = false;
+            self.update_score(score_update);
+        }
 
-    fn next_frame(&mut self) -> BoardTransition {
-        self.default_driver.next_frame()
-    }
-
-    fn hold(&mut self) {
-        self.default_driver.hold()
-    }
-
-    fn fall(&mut self) -> (bool, BoardTransition) {
-        self.default_driver.fall()
-    }
-
-    fn fastfall(&mut self) -> (i32, BoardTransition) {
-        self.default_driver.fastfall()
-    }
-
-    fn rows_cleared(&mut self, rows: Vec<i32>) -> BoardTransition {
-        let score_update = match rows.len() {
-            1 => 1,
-            2 => 3,
-            3 => 5,
-            4 => if self.last_clear_was_tetris {
-                    12
-                } else {
-                    self.last_clear_was_tetris = true;
-                    8
-                }
-            _ => 0
-        };
-
-        self.last_clear_was_tetris = false;
-        self.update_score(score_update);
-        self.default_driver.rows_cleared(rows)
-    }
-
-    fn points_cleared(&mut self, points: Vec<Point>) -> BoardTransition {
-        self.default_driver.points_cleared(points)
-    }
-
-    fn points_fell(&mut self, points: Vec<(Point, i32)>, full_rows: Vec<i32>) -> BoardTransition {
-        self.default_driver.points_fell(points, full_rows)
+        new_transition
     }
 }

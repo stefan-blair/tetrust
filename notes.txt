@@ -10,15 +10,13 @@ Known Issues:
                     or 
                     +-- tile_all.png   (if all of the tiles are the same)
 
-Priority so that jamie can start testing graphics and stuff
+
     The ghost pieces are lagging sometimes (like when against a wall)
     Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
 
     Make an option that records the game for replay (record and replay driver)
 
     make the cell values u64s, and allow any type to be stored in them that can be converted to / from u64
-
-
 
     Implement scoring for everything
 
