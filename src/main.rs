@@ -1,6 +1,10 @@
 #![feature(const_fn_floating_point_arithmetic)]
 
 use macroquad::prelude::*;
+use std::pin::Pin;
+use std::collections::HashMap;
+use std::rc::Rc;
+use futures::future::{FutureExt, ready};
 
 #[macro_use]
 mod game_core;
@@ -21,49 +25,68 @@ use fusion_driver::FusionDriver;
 use debugging::recording::RecordingDriver;
 use debugging::replaying::ReplayingDriver;
 
-use ui::rendering::basic_tileset_renderer::BasicTilesetRenderManager;
+use ui::rendering::*;
 
+
+struct GameMode {
+    name: &'static str,
+    get_driver: fn() -> Box<dyn Driver>,
+    get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager<'a>> + 'a>>
+}
+
+impl GameMode {
+    fn new(name: &'static str, get_driver: fn() -> Box<dyn Driver>) -> Self {
+        Self {
+            name, get_driver, 
+            get_renderer: |x| Box::pin(x.start_building().build())
+        }
+    }
+
+    fn with_get_renderer(mut self, get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager<'a>> + 'a>>) -> Self {
+        self.get_renderer = get_renderer;
+        self
+    }
+
+    async fn construct_gamestate<'a>(&self, factory: &'a mut RenderManagerFactory) -> Box<dyn GameState + 'a> {
+        TetrisState::new(
+            (self.get_driver)(),
+            (self.get_renderer)(factory).await
+        )
+    }
+}
 
 #[macroquad::main("TetRust")]
 async fn main() {
-    let basic_tileset_renderer = Box::new(
-        BasicTilesetRenderManager::new(
-            "res/basic_tilemap.png", 
-            "res/basic_tilemap_info.json").await);
-    let render_2 = basic_tileset_renderer.clone();
-    let render_3 = basic_tileset_renderer.clone();
-    let render_4 = basic_tileset_renderer.clone();
-    let render_5 = basic_tileset_renderer.clone();
+    let mut render_manager_factory = Rc::new(RenderManagerFactory::new());
+
+    let gamemodes = vec![
+        GameMode::new("classic", || DriverBuilder::<ClassicDriver>::new().build_boxed())
+            .with_get_renderer(|f| Box::pin(f.start_building()
+                .with_tilemap("res/basic_tilemap.png", "res/basic_tilemap_info.json")
+                .build())),
+        GameMode::new("cascade", || DriverBuilder::<CascadeDriver>::new().build_boxed())
+            .with_get_renderer(|f| Box::pin(f.start_building().build())),
+        GameMode::new("sticky", || DriverBuilder::<StickyDriver>::new().build_boxed()),
+        GameMode::new("fusion", || DriverBuilder::<FusionDriver>::new().build_boxed())
+    ]
+    .into_iter()
+    .map(|gamemode| (gamemode.name, gamemode))
+    .collect::<HashMap::<_, _>>();
+
+    let mut menu_options = gamemodes
+                .keys()
+                .into_iter()
+                .map(|name| {
+                    let factory_ref = render_manager_factory.clone();
+                    MenuOption::new(name.to_string(), Box::new(move || {
+                        let factory = Rc::get_mut(&mut factory_ref).unwrap();
+                        gamemodes[name].construct_gamestate(factory)
+                    }))
+                })
+                .collect::<Vec<_>>();
 
     let menu_state = MenuState::new(vec![
-        MenuOption::new("classic".to_string(), Box::new(move || {
-            TetrisState::new(
-                DriverBuilder::<ClassicDriver>::new()
-                    .build_boxed(),
-                basic_tileset_renderer.clone()
-            )
-            // TetrisState::new(Box::new(RecordingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), basic_tileset_renderer.clone())
-        })),
-        MenuOption::new("cascade".to_string(), Box::new(move || {
-            TetrisState::new(
-                DriverBuilder::<CascadeDriver>::new().build_boxed(), 
-                render_2.clone())
-        })),
-        MenuOption::new("sticky".to_string(), Box::new(move || {
-            TetrisState::new(
-                DriverBuilder::<StickyDriver>::new().build_boxed(), 
-                render_3.clone())
-        })),
-        MenuOption::new("fusion".to_string(), Box::new(move || {
-            TetrisState::new(
-                DriverBuilder::<FusionDriver>::new().build_boxed(), 
-                render_4.clone())
-        })),
-        // MenuOption::new("replay".to_string(), Box::new(move || {
-        //     TetrisState::new(Box::new(ReplayingDriver::new(Box::new(ClassicDriver::new(DefaultDriverBuilder::new().with_tetrimino_generator(RecordingDriver::get_generator(game_core::defaults::tetriminos::TETRIMINOS)).build())), "replays/replay.json")), 
-        //     render_5.clone())
-        // })),
-        MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![]))),
+        MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![])))
     ]);
 
     let mut game_states: Vec<Box<dyn GameState>> = vec![menu_state];

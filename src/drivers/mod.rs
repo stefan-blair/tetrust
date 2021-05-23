@@ -1,3 +1,5 @@
+use rand::{thread_rng, Rng};
+
 use crate::game_core::GameCore;
 use crate::game_core::utils::point::Point;
 use crate::game_core::utils::orientations::Direction;
@@ -229,26 +231,30 @@ impl DriverCore {
 }
 
 pub struct BasicGenerator {
-    tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser
+    tetrimino_chooser: utils::tetrimino_chooser::TetriminoChooser
 }
 
 impl BasicGenerator {
     pub fn new(tetrimino_types: &'static [TetriminoType]) -> Box<Self> {
         Box::new(Self {
-            tetrimino_type_chooser: utils::tetrimino_chooser::TetriminoChooser::new(tetrimino_types)
+            tetrimino_chooser: utils::tetrimino_chooser::TetriminoChooser::new(tetrimino_types)
         })
     }
 }
 
 impl TetriminoGenerator for BasicGenerator {
     fn next(&mut self) -> Tetrimino {
-        let (index, tetrimino_type) = self.tetrimino_type_chooser.choose_tetrimino_type();
+        let (index, tetrimino_type) = self.tetrimino_chooser.choose_tetrimino_type();
         let values = vec![index as u32; 4];
         tetrimino_type.instance(values)
     }
 
     fn get_tetrimino_types(&self) -> &'static [TetriminoType] {
-        self.tetrimino_type_chooser.get_tetrimino_types()
+        self.tetrimino_chooser.get_tetrimino_types()
+    }
+
+    fn set_seed(&mut self, seed: Vec<u8>) {
+        self.tetrimino_chooser.set_seed(seed);
     }
 }
 
@@ -268,6 +274,7 @@ pub struct DriverBuilder<T: BuildableDriver> {
     queue_length: usize,
     lock_delay: usize,
     get_gravity: fn(usize) -> f32,
+    rng_seed: Vec<u8>,
     tetrimino_generator: Option<Box<dyn TetriminoGenerator>>,
 
     cont: T::Data
@@ -281,6 +288,7 @@ impl<T: BuildableDriver> DriverBuilder<T> {
             queue_length: defaults::settings::QUEUE_LENGTH,
             lock_delay: 120,
             get_gravity: defaults::gravity::calculate_gravity,
+            rng_seed: (0..32).map(|_| thread_rng().gen::<u8>()).collect(),
             tetrimino_generator: None,
 
             cont: Default::default()
@@ -297,11 +305,18 @@ impl<T: BuildableDriver> DriverBuilder<T> {
 
     pub fn build_core(&mut self) -> DriverCore {
         let board = Board::new(self.width, self.height);
+
+        let mut tetrimino_generator = self.tetrimino_generator
+            .take()
+            .unwrap_or(BasicGenerator::new(defaults::tetriminos::TETRIMINOS));
+        
+        tetrimino_generator.set_seed(self.rng_seed.clone());
+
         // initialize the game engine
         let core = GameCore::new(
             board,
             self.queue_length,
-            self.tetrimino_generator.take().unwrap_or(BasicGenerator::new(defaults::tetriminos::TETRIMINOS)));
+            tetrimino_generator);
 
         DriverCore {
             core,

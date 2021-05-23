@@ -18,10 +18,10 @@ use crate::ui::rendering::*;
 const HOLD_DELAY: usize = 15;
 const HOLD_RATE: usize = 3;
 
-pub struct TetrisState {
+pub struct TetrisState<'a> {
     driver: Box<dyn Driver>,
 
-    render_manager: Box<dyn TileRenderManager>,
+    render_manager: RenderManager<'a>,
     widgets: Vec<Box<dyn Widget>>,
     buttons: Vec<ButtonHandler<Self, ()>>,
     /* 
@@ -35,8 +35,8 @@ pub struct TetrisState {
     transition: BoardTransition,
 }
 
-impl TetrisState {
-    pub fn new(driver: Box<dyn Driver>, render_manager: Box<dyn TileRenderManager>) -> Box<Self> {
+impl<'a> TetrisState<'a> {
+    pub fn new(driver: Box<dyn Driver>, render_manager: RenderManager<'a>) -> Box<Self> {
         let board_dimensions = Point((screen_height() * 0.8 * 0.5) as i32, 10 + (screen_height() * 0.8) as i32);
         let board_position = Point((screen_width() as i32 - board_dimensions.x()) / 2, (screen_height() as i32 - board_dimensions.y()) / 2);
         let tetris_board = TetrisBoard::new((board_position, board_position + board_dimensions));
@@ -51,7 +51,7 @@ impl TetrisState {
                 driver.get_game_core(), 
                 |core| core.get_held());
 
-        let function_points: Vec<for <'a> fn(&'a GameCore) -> Option<&'a Tetrimino>> = vec![
+        let function_points: Vec<for <'b> fn(&'b GameCore) -> Option<&'b Tetrimino>> = vec![
             |core| Some(core.get_next_tetrimino(0)),
             |core| Some(core.get_next_tetrimino(1)),
             |core| Some(core.get_next_tetrimino(2)),
@@ -128,7 +128,7 @@ impl TetrisState {
     }
 }
 
-impl GameState for TetrisState {
+impl GameState for TetrisState<'_> {
     fn next_frame(&mut self) -> (usize, Vec<Box<dyn GameState>>) {
         clear_background(BLACK);
 
@@ -171,7 +171,7 @@ impl GameState for TetrisState {
         };
 
         for widget in self.widgets.iter_mut() {
-            widget.draw(widget_state, self.render_manager.get_rendering_state(widget_state))
+            widget.draw(widget_state, self.render_manager.get_rendering_state(widget_state));
         }
 
         return (0, Vec::new())

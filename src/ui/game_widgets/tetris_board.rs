@@ -18,7 +18,7 @@ impl TetrisBoard{
 }
 
 impl Widget for TetrisBoard {
-    fn draw<'a>(&mut self, state: WidgetState, mut rendering_state: Box<dyn TileRenderer + 'a>) {
+    fn draw<'a>(&mut self, state: WidgetState, mut rendering_state: Renderer) {
         let driver = state.driver;
         let area = self.area;
         let game_core = driver.get_game_core();

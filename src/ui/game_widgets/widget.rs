@@ -12,5 +12,5 @@ pub struct WidgetState<'a> {
 }
 
 pub trait Widget {
-    fn draw<'a>(&mut self, state: WidgetState, renderer: Box<dyn TileRenderer + 'a>);
+    fn draw<'a>(&mut self, state: WidgetState, renderer: Renderer);
 }

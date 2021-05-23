@@ -41,6 +41,10 @@ impl TetriminoGenerator for StickyGenerator {
     fn get_tetrimino_types(&self) -> &'static [TetriminoType] {
         self.tetrimino_chooser.get_tetrimino_types()
     }
+    
+    fn set_seed(&mut self, seed: Vec<u8>) {
+        self.tetrimino_chooser.set_seed(seed);
+    }
 }
 
 pub struct StickyDriver {

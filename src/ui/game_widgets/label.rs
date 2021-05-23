@@ -30,7 +30,7 @@ impl Label {
 }
 
 impl Widget for Label {
-    fn draw<'a>(&mut self, state: WidgetState, _: Box<dyn TileRenderer + 'a>) {
+    fn draw<'a>(&mut self, state: WidgetState, _: Renderer) {
         let text = (self.extract_string)(state.driver);
         draw_text(&text, self.location.x() as f32, self.location.y() as f32, self.font_size, self.color);
     }

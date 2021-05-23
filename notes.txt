@@ -11,6 +11,8 @@ Known Issues:
                     +-- tile_all.png   (if all of the tiles are the same)
 
 
+    the game loop doesn't need to all be in the main function
+
     The ghost pieces are lagging sometimes (like when against a wall)
     Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
 
