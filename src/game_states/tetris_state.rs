@@ -1,4 +1,5 @@
 use macroquad::prelude::*;
+use futures::future::FutureExt;
 
 use super::GameState;
 use super::menu_state::MenuState;
@@ -129,6 +130,12 @@ impl<'a> TetrisState<'a> {
 }
 
 impl GameState for TetrisState<'_> {
+    fn run(self, gamestates: &mut Vec<Box<dyn GameState>>) -> Box<dyn FutureExt<Output = ()>> {
+        loop {
+            frame_next().await;
+        }
+    }
+
     fn next_frame(&mut self) -> (usize, Vec<Box<dyn GameState>>) {
         clear_background(BLACK);
 

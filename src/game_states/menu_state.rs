@@ -1,16 +1,19 @@
 use macroquad::prelude::*;
+use futures::future::FutureExt;
 
 use super::GameState;
 use crate::ui::button::ButtonHandler;
 
 
+type FutureGameState = Box<dyn FutureExt<Output = Box<dyn GameState>>>;
+
 pub struct MenuOption {
     title: String,
-    command: Box<dyn Fn() -> Box<dyn GameState>>
+    command: Box<dyn Fn() -> FutureGameState>
 }
 
 impl MenuOption {
-    pub fn new(title: String, command: Box<dyn Fn() -> Box<dyn GameState>>) -> Self {
+    pub fn new(title: String, command: Box<dyn Fn() -> FutureGameState>) -> Self {
         Self {
             title, command
         }
@@ -19,7 +22,7 @@ impl MenuOption {
 
 pub struct MenuState {
     options: Vec<MenuOption>,
-    buttons: Vec<ButtonHandler<Self, Option<(usize, Vec<Box<dyn GameState>>)>>>,
+    buttons: Vec<ButtonHandler<Self, Option<(usize, Vec<FutureGameState>)>>>,
     selected_option: usize,
 }
 

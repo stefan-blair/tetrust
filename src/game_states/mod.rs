@@ -1,8 +1,10 @@
+use futures::future::FutureExt;
+
 pub mod menu_state;
 pub mod tetris_state;
 
 
 pub trait GameState {
-    // returns a tuple, the number of states to pop and any states to push
-    fn next_frame(&mut self) -> (usize, Vec<Box<dyn GameState>>);
+    // take control of execution, and fully manage the gamestate
+    fn run(self, gamestates: &mut Vec<Box<dyn GameState>>) -> Box<dyn FutureExt<Output = ()>>;
 }
