@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
-use futures::future::FutureExt;
+use async_trait::async_trait;
 
-use super::GameState;
+use super::*;
 use super::menu_state::MenuState;
 
 use crate::drivers::*;
@@ -19,10 +19,10 @@ use crate::ui::rendering::*;
 const HOLD_DELAY: usize = 15;
 const HOLD_RATE: usize = 3;
 
-pub struct TetrisState<'a> {
+pub struct TetrisState {
     driver: Box<dyn Driver>,
 
-    render_manager: RenderManager<'a>,
+    render_manager: RenderManager,
     widgets: Vec<Box<dyn Widget>>,
     buttons: Vec<ButtonHandler<Self, ()>>,
     /* 
@@ -36,8 +36,8 @@ pub struct TetrisState<'a> {
     transition: BoardTransition,
 }
 
-impl<'a> TetrisState<'a> {
-    pub fn new(driver: Box<dyn Driver>, render_manager: RenderManager<'a>) -> Box<Self> {
+impl TetrisState {
+    pub fn new(driver: Box<dyn Driver>, render_manager: RenderManager) -> Box<Self> {
         let board_dimensions = Point((screen_height() * 0.8 * 0.5) as i32, 10 + (screen_height() * 0.8) as i32);
         let board_position = Point((screen_width() as i32 - board_dimensions.x()) / 2, (screen_height() as i32 - board_dimensions.y()) / 2);
         let tetris_board = TetrisBoard::new((board_position, board_position + board_dimensions));
@@ -129,58 +129,57 @@ impl<'a> TetrisState<'a> {
     }
 }
 
-impl GameState for TetrisState<'_> {
-    fn run(self, gamestates: &mut Vec<Box<dyn GameState>>) -> Box<dyn FutureExt<Output = ()>> {
+#[async_trait(?Send)]
+impl<'a> GameState<'a> for TetrisState {
+    async fn run(mut self: Box<Self>, gamestate_manager: &mut GameStateManager) {
         loop {
-            frame_next().await;
-        }
-    }
+            clear_background(BLACK);
 
-    fn next_frame(&mut self) -> (usize, Vec<Box<dyn GameState>>) {
-        clear_background(BLACK);
-
-        if is_key_pressed(KeyCode::P) {
-            return (0, vec![MenuState::new(Vec::new())])
-        }
-
-        if self.transition.is_inert() {
-            self.transition = self.driver.next_frame();
-
-            let mut buttons = std::mem::replace(&mut self.buttons, Vec::new());
-            for button in buttons.iter_mut() {
-                button.update(self);
+            if is_key_pressed(KeyCode::P) {
+                gamestate_manager.get_gamestate_stack().push(self);
+                gamestate_manager.get_gamestate_stack().push(Box::new(MenuState::new(Vec::new())));
+                return;
             }
-            self.buttons = buttons;
-            if self.reset_button_holds {
-                for button in self.buttons.iter_mut() {
-                    button.reset_hold();
+    
+            if self.transition.is_inert() {
+                self.transition = self.driver.next_frame();
+    
+                let mut buttons = std::mem::replace(&mut self.buttons, Vec::new());
+                for button in buttons.iter_mut() {
+                    button.update(self.as_mut());
                 }
-
-                self.reset_button_holds = false;
+                self.buttons = buttons;
+                if self.reset_button_holds {
+                    for button in self.buttons.iter_mut() {
+                        button.reset_hold();
+                    }
+    
+                    self.reset_button_holds = false;
+                }
+            } else {
+                self.transition_elapsed += 1;
+                if self.transition_elapsed > self.transition_duration {
+                    self.transition_elapsed = 0;
+                    let new_transition = self.driver.finish_transition(std::mem::replace(&mut self.transition, BoardTransition::new()));
+                    self.transition = new_transition;
+                }
             }
-        } else {
-            self.transition_elapsed += 1;
-            if self.transition_elapsed > self.transition_duration {
-                self.transition_elapsed = 0;
-                let new_transition = self.driver.finish_transition(std::mem::replace(&mut self.transition, BoardTransition::new()));
-                self.transition = new_transition;
+    
+            // make sure all arrays are sorted and deduped
+            self.transition.compress();
+    
+            let widget_state = WidgetState {
+                driver: self.driver.as_ref(),
+                transition: &self.transition,
+                transition_duration: self.transition_duration,
+                transition_elapsed: self.transition_elapsed
+            };
+    
+            for widget in self.widgets.iter_mut() {
+                widget.draw(widget_state, self.render_manager.get_rendering_state(widget_state));
             }
+    
+            next_frame().await;
         }
-
-        // make sure all arrays are sorted and deduped
-        self.transition.compress();
-
-        let widget_state = WidgetState {
-            driver: self.driver.as_ref(),
-            transition: &self.transition,
-            transition_duration: self.transition_duration,
-            transition_elapsed: self.transition_elapsed
-        };
-
-        for widget in self.widgets.iter_mut() {
-            widget.draw(widget_state, self.render_manager.get_rendering_state(widget_state));
-        }
-
-        return (0, Vec::new())
     }
 }

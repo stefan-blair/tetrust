@@ -1,40 +1,43 @@
-Known Issues:
-    Make real graphics:
-        folder organization:
-            pieces
-            |
-            +-- gamemode_name (classic)
-                +-- piece_name  (S|Z|I|T|J|L|O)
-                    +-- tile_0.png
-                    +-- tile_1.png     (the numbers index which piece is there)
-                    or 
-                    +-- tile_all.png   (if all of the tiles are the same)
+Make real graphics:
+    folder organization:
+        pieces
+        |
+        +-- gamemode_name (classic)
+            +-- piece_name  (S|Z|I|T|J|L|O)
+                +-- tile_0.png
+                +-- tile_1.png     (the numbers index which piece is there)
+                or 
+                +-- tile_all.png   (if all of the tiles are the same)
 
 
-    the game loop doesn't need to all be in the main function
+the game loop doesn't need to all be in the main function
 
-    The ghost pieces are lagging sometimes (like when against a wall)
-    Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
+Make an option that records the game for replay (record and replay driver)
 
-    Make an option that records the game for replay (record and replay driver)
+The ghost pieces are lagging sometimes (like when against a wall)
+Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
 
-    make the cell values u64s, and allow any type to be stored in them that can be converted to / from u64
+The sticky tetris seems to have a bug / glitch now
 
-    Implement scoring for everything
+Whenever a bug is fixed, keep that record, and then replay it (not graphically but simulated internally) to ensure no regressions
 
-    When holding down the fall button, some double falls occur due to gravity.  have the fall button reset 
-        its counter whenever an actual gravity fall happens, 
-        or when the button is held down, disable gravity unless gravity is greater falling rate
-        or when the button is held down, have the gravity function return double gravity rate or something
+make the cell values u64s, and allow any type to be stored in them that can be converted to / from u64
 
-    When fall or fastfall is pressed during a lock step, right as the piece is being placed, it leads to the fastfall being 
-        applied to the next piece (so it falls right away)
-            either add a visual indicator (so you can see the lock step, and when its about to expire)
-            or, ignore fastfalls that happen for a few frames after lock step ends
+Implement scoring for everything
 
-    Make fusion have full cascade rules, so the pieces each have their own values
-    Make cascade tetris check for overflowing values and then auto recalculate all active values back from 0
+When holding down the fall button, some double falls occur due to gravity.  have the fall button reset 
+    its counter whenever an actual gravity fall happens, 
+    or when the button is held down, disable gravity unless gravity is greater falling rate
+    or when the button is held down, have the gravity function return double gravity rate or something
+
+When fall or fastfall is pressed during a lock step, right as the piece is being placed, it leads to the fastfall being 
+    applied to the next piece (so it falls right away)
+        either add a visual indicator (so you can see the lock step, and when its about to expire)
+        or, ignore fastfalls that happen for a few frames after lock step ends
+
+Make fusion have full cascade rules, so the pieces each have their own values
+Make cascade tetris check for overflowing values and then auto recalculate all active values back from 0
 
 
-    The lock delay needs to be reset whenever the current active tetrimino is switched
-        -- this seems to be fixed
+The lock delay needs to be reset whenever the current active tetrimino is switched
+    -- this seems to be fixed

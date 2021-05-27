@@ -1,9 +1,7 @@
 #![feature(const_fn_floating_point_arithmetic)]
 
-use macroquad::prelude::*;
 use std::pin::Pin;
 use std::collections::HashMap;
-use std::rc::Rc;
 use futures::future::{FutureExt, ready};
 
 #[macro_use]
@@ -14,7 +12,7 @@ mod ui;
 
 use drivers::*;
 
-use game_states::GameState;
+use game_states::*;
 use game_states::menu_state::*;
 use game_states::tetris_state::*;
 
@@ -31,7 +29,7 @@ use ui::rendering::*;
 struct GameMode {
     name: &'static str,
     get_driver: fn() -> Box<dyn Driver>,
-    get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager<'a>> + 'a>>
+    get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager> + 'a>>
 }
 
 impl GameMode {
@@ -42,23 +40,21 @@ impl GameMode {
         }
     }
 
-    fn with_get_renderer(mut self, get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager<'a>> + 'a>>) -> Self {
+    fn with_get_renderer(mut self, get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager> + 'a>>) -> Self {
         self.get_renderer = get_renderer;
         self
     }
 
-    async fn construct_gamestate<'a>(&self, factory: &'a mut RenderManagerFactory) -> Box<dyn GameState + 'a> {
+    async fn construct_gamestate<'a>(&self, factory: &mut GameStateManager<'a>) -> Box<dyn GameState<'a> + 'a> {
         TetrisState::new(
             (self.get_driver)(),
-            (self.get_renderer)(factory).await
+            (self.get_renderer)(factory.get_render_manager_factory()).await
         )
     }
 }
 
 #[macroquad::main("TetRust")]
 async fn main() {
-    let mut render_manager_factory = Rc::new(RenderManagerFactory::new());
-
     let gamemodes = vec![
         GameMode::new("classic", || DriverBuilder::<ClassicDriver>::new().build_boxed())
             .with_get_renderer(|f| Box::pin(f.start_building()
@@ -68,40 +64,30 @@ async fn main() {
             .with_get_renderer(|f| Box::pin(f.start_building().build())),
         GameMode::new("sticky", || DriverBuilder::<StickyDriver>::new().build_boxed()),
         GameMode::new("fusion", || DriverBuilder::<FusionDriver>::new().build_boxed())
-    ]
-    .into_iter()
-    .map(|gamemode| (gamemode.name, gamemode))
-    .collect::<HashMap::<_, _>>();
+    ];
 
-    let mut menu_options = gamemodes
-                .keys()
+    let gamemode_names = gamemodes.iter().map(|gamemode| gamemode.name).collect::<Vec<_>>();
+    let gamemodes = gamemodes
+        .into_iter()
+        .map(|gamemode| (gamemode.name, gamemode))
+        .collect::<HashMap::<&'static str, _>>();
+
+    let gamemodes_ref = &gamemodes;
+    let mut menu_options = gamemode_names
                 .into_iter()
                 .map(|name| {
-                    let factory_ref = render_manager_factory.clone();
-                    MenuOption::new(name.to_string(), Box::new(move || {
-                        let factory = Rc::get_mut(&mut factory_ref).unwrap();
-                        gamemodes[name].construct_gamestate(factory)
-                    }))
+                    MenuOption::new(name.to_string(), move |f| {
+                        Box::pin(gamemodes_ref[name].construct_gamestate(f))
+                    })
                 })
                 .collect::<Vec<_>>();
+    // menu_options.push(MenuOption::new("options".to_string(), Box::new(|_| Box::pin(ready(MenuState::new(vec![]) as Box<dyn GameState>)))));
 
-    let menu_state = MenuState::new(vec![
-        MenuOption::new("options".to_string(), Box::new(|| MenuState::new(vec![])))
-    ]);
+    
+    let menu_state = MenuState::new(menu_options);
+    
+    let mut gamestate_manager = GameStateManager::new()
+        .with_gamestate(menu_state);
 
-    let mut game_states: Vec<Box<dyn GameState>> = vec![menu_state];
-
-    loop {
-        // call the current main game state
-        let (pop, mut new_states) = game_states.last_mut().unwrap().next_frame();
-        for _ in 0..pop {
-            game_states.pop();
-        }
- 
-        if !new_states.is_empty() {
-            game_states.append(&mut new_states);
-        }
-
-        next_frame().await
-    }
+    gamestate_manager.run().await;
 }

@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use std::rc::Rc;
 use std::collections::HashMap;
 
 use crate::game_core::GameCore;
@@ -197,25 +198,25 @@ impl<'a> Renderer<'a> {
 }
 
 #[derive(Clone)]
-pub struct RenderManager<'a> {
-    tile_map: Option<&'a TileMap>
+pub struct RenderManager {
+    tile_map: Option<Rc<TileMap>>
 }
 
-impl<'a> RenderManager<'a> { 
-    pub fn get_rendering_state<'b>(&'b mut self, widget_state: WidgetState<'b>) -> Renderer<'b> {
+impl RenderManager { 
+    pub fn get_rendering_state<'a>(&'a mut self, widget_state: WidgetState<'a>) -> Renderer<'a> {
         let transition_completion = (widget_state.transition_elapsed as f32) / (widget_state.transition_duration as f32);        
         Renderer::new(
             widget_state.driver.get_game_core(), 
             widget_state.transition, 
             transition_completion,
-            self.tile_map)
+            self.tile_map.as_ref().map(|x| x.as_ref()))
     }
 }
 
 type TileMapKey = (&'static str, &'static str);
 
 pub struct RenderManagerFactory {
-    tile_maps: HashMap<TileMapKey, TileMap>,
+    tile_maps: HashMap<TileMapKey, Rc<TileMap>>,
 }
 
 impl RenderManagerFactory {
@@ -245,15 +246,15 @@ impl<'a> RenderManagerBuilder<'a> {
         self
     }
 
-    pub async fn build(mut self) -> RenderManager<'a> {
+    pub async fn build(self) -> RenderManager {
         let mut tile_map = None;
 
         if let Some(tile_map_key) = self.tile_map {
             if !self.render_manager.tile_maps.contains_key(&tile_map_key) {
-                self.render_manager.tile_maps.insert(tile_map_key, TileMap::new(tile_map_key.0, tile_map_key.1).await);
+                self.render_manager.tile_maps.insert(tile_map_key, Rc::new(TileMap::new(tile_map_key.0, tile_map_key.1).await));
             }
 
-            tile_map = Some(self.render_manager.tile_maps.get(&tile_map_key).unwrap());
+            tile_map = Some(self.render_manager.tile_maps.get(&tile_map_key).unwrap().clone());
         }
 
         RenderManager {
