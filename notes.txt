@@ -10,7 +10,7 @@ Make real graphics:
                 +-- tile_all.png   (if all of the tiles are the same)
 
 
-the game loop doesn't need to all be in the main function
+instead of passing around futures, could just pass around builders
 
 Make an option that records the game for replay (record and replay driver)
 

@@ -1,8 +1,7 @@
 #![feature(const_fn_floating_point_arithmetic)]
 
-use std::pin::Pin;
 use std::collections::HashMap;
-use futures::future::{FutureExt, ready};
+use futures::future::FutureExt;
 
 #[macro_use]
 mod game_core;
@@ -29,18 +28,18 @@ use ui::rendering::*;
 struct GameMode {
     name: &'static str,
     get_driver: fn() -> Box<dyn Driver>,
-    get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager> + 'a>>
+    get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder
 }
 
 impl GameMode {
     fn new(name: &'static str, get_driver: fn() -> Box<dyn Driver>) -> Self {
         Self {
             name, get_driver, 
-            get_renderer: |x| Box::pin(x.start_building().build())
+            get_renderer: |x| x.start_building()
         }
     }
 
-    fn with_get_renderer(mut self, get_renderer: for <'a> fn(&'a mut RenderManagerFactory) -> Pin<Box<dyn FutureExt<Output = RenderManager> + 'a>>) -> Self {
+    fn with_get_renderer(mut self, get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder) -> Self {
         self.get_renderer = get_renderer;
         self
     }
@@ -48,8 +47,8 @@ impl GameMode {
     async fn construct_gamestate<'a>(&self, factory: &mut GameStateManager<'a>) -> Box<dyn GameState<'a> + 'a> {
         TetrisState::new(
             (self.get_driver)(),
-            (self.get_renderer)(factory.get_render_manager_factory()).await
-        )
+            (self.get_renderer)(factory.get_render_manager_factory()).build().await
+        ).boxed()
     }
 }
 
@@ -57,11 +56,10 @@ impl GameMode {
 async fn main() {
     let gamemodes = vec![
         GameMode::new("classic", || DriverBuilder::<ClassicDriver>::new().build_boxed())
-            .with_get_renderer(|f| Box::pin(f.start_building()
-                .with_tilemap("res/basic_tilemap.png", "res/basic_tilemap_info.json")
-                .build())),
+            .with_get_renderer(|f| f.start_building()
+                .with_tilemap("res/basic_tilemap.png", "res/basic_tilemap_info.json")),
         GameMode::new("cascade", || DriverBuilder::<CascadeDriver>::new().build_boxed())
-            .with_get_renderer(|f| Box::pin(f.start_building().build())),
+            .with_get_renderer(|f| f.start_building()),
         GameMode::new("sticky", || DriverBuilder::<StickyDriver>::new().build_boxed()),
         GameMode::new("fusion", || DriverBuilder::<FusionDriver>::new().build_boxed())
     ];
@@ -81,10 +79,13 @@ async fn main() {
                     })
                 })
                 .collect::<Vec<_>>();
-    // menu_options.push(MenuOption::new("options".to_string(), Box::new(|_| Box::pin(ready(MenuState::new(vec![]) as Box<dyn GameState>)))));
+    
+    menu_options.push(
+        MenuOption::new("options".to_string(), |_| 
+            Box::pin(MenuState::new(vec![]).map(|x| x.boxed()))));
 
     
-    let menu_state = MenuState::new(menu_options);
+    let menu_state = MenuState::new(menu_options).await;
     
     let mut gamestate_manager = GameStateManager::new()
         .with_gamestate(menu_state);

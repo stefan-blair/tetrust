@@ -49,4 +49,8 @@ pub trait GameState<'a> {
         self: Box<Self>, 
         gamestate_manager: &mut GameStateManager<'a>
     );
+
+    fn boxed(self) -> Box<dyn GameState<'a> + 'a> where Self: 'a + Sized {
+        Box::new(self)
+    }
 }

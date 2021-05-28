@@ -37,7 +37,7 @@ pub struct TetrisState {
 }
 
 impl TetrisState {
-    pub fn new(driver: Box<dyn Driver>, render_manager: RenderManager) -> Box<Self> {
+    pub fn new(driver: Box<dyn Driver>, render_manager: RenderManager) -> Self {
         let board_dimensions = Point((screen_height() * 0.8 * 0.5) as i32, 10 + (screen_height() * 0.8) as i32);
         let board_position = Point((screen_width() as i32 - board_dimensions.x()) / 2, (screen_height() as i32 - board_dimensions.y()) / 2);
         let tetris_board = TetrisBoard::new((board_position, board_position + board_dimensions));
@@ -114,7 +114,7 @@ impl TetrisState {
             left, right, down, fastfall
         ];
     
-        Box::new(Self {
+        Self {
             driver,
     
             render_manager,
@@ -125,7 +125,7 @@ impl TetrisState {
             transition: BoardTransition::new(),
             transition_duration: 10,
             transition_elapsed: 0,
-        })
+        }
     }
 }
 
@@ -137,7 +137,7 @@ impl<'a> GameState<'a> for TetrisState {
 
             if is_key_pressed(KeyCode::P) {
                 gamestate_manager.get_gamestate_stack().push(self);
-                gamestate_manager.get_gamestate_stack().push(Box::new(MenuState::new(Vec::new())));
+                gamestate_manager.get_gamestate_stack().push(MenuState::new(Vec::new()).await.boxed());
                 return;
             }
     

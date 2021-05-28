@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use futures::future::FutureExt;
+use futures::future::Future;
 use async_trait::async_trait;
 
 use std::pin::Pin;
@@ -8,7 +8,7 @@ use super::*;
 use crate::ui::button::ButtonHandler;
 
 
-type FutureGameState<'a, 'b> = Pin<Box<dyn FutureExt<Output = Box<dyn GameState<'a> + 'a>> + 'b>>;
+type FutureGameState<'a, 'b> = Pin<Box<dyn Future<Output = Box<dyn GameState<'a> + 'a>> + 'b>>;
 
 pub struct MenuOption<'a> {
     title: String,
@@ -30,7 +30,7 @@ pub struct MenuState<'a> {
 }
 
 impl<'a> MenuState<'a> {
-    pub fn new(options: Vec<MenuOption<'a>>) -> Self {
+    pub async fn new(options: Vec<MenuOption<'a>>) -> MenuState<'a> {
         let up_button = ButtonHandler::holdable(KeyCode::Up, 20, 2, |state: &mut Self| {
             if state.selected_option == 0 {
                 state.selected_option = state.options.len() - 1
