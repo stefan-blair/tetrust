@@ -9,9 +9,6 @@ use crate::ui::assets::tilemap::TileMap;
 use crate::game_core::utils::point::*;
 use crate::ui::game_widgets::widget::WidgetState;
 
-pub mod basic_renderer;
-pub mod basic_tileset_renderer;
-
 
 pub struct Renderer<'a> {
     game_core: &'a GameCore,
@@ -173,7 +170,7 @@ impl<'a> Renderer<'a> {
             );    
         } else {
             let boarder = cell_size as f32 / 80.0;
-            let mut color = match value {
+            let mut color = match value % 7 {
                 0 => RED,
                 1 => BLUE,
                 2 => GREEN,

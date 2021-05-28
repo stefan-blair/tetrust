@@ -20,12 +20,12 @@ pub struct RecordingDriver<'a> {
     wrapped: Box<dyn Driver + 'a>,
     current_frame: usize,
     actions: Vec<(usize, Action)>,
-    destination_file: &'static str,
+    destination_file: String,
 }
 
 impl<'a> RecordingDriver<'a> {
-    pub fn new(wrapped: Box<dyn Driver + 'a>, destination_file: &'static str) -> Self {
-        remove_file(destination_file).ok();
+    pub fn new(wrapped: Box<dyn Driver + 'a>, destination_file: String) -> Self {
+        remove_file(&destination_file).ok();
         Self {
             wrapped,
             current_frame: 0,
@@ -44,7 +44,7 @@ impl<'a> RecordingDriver<'a> {
             .write(true)
             .create(true)
             .append(true)
-            .open(self.destination_file)
+            .open(&self.destination_file)
             .unwrap();
         file.write_all(&serialized).unwrap();
         file.write_all(b",").unwrap();

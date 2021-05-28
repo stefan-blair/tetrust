@@ -21,7 +21,7 @@ impl<T, R> ButtonHandler<T, R> {
             action,
 
             holdable: false,
-            hold_reset_required: false,
+            hold_reset_required: true,
             is_held: false,
             held_frames: 0,
             hold_delay: 0,

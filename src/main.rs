@@ -8,6 +8,7 @@ mod game_core;
 mod drivers;
 mod game_states;
 mod ui;
+mod debugging;
 
 use drivers::*;
 
@@ -19,23 +20,29 @@ use classic_driver::ClassicDriver;
 use cascade_driver::CascadeDriver;
 use sticky_driver::StickyDriver;
 use fusion_driver::FusionDriver;
-use debugging::recording::RecordingDriver;
-use debugging::replaying::ReplayingDriver;
+use debugging::drivers::recording::RecordingDriver;
+use debugging::drivers::replaying::ReplayingDriver;
 
 use ui::rendering::*;
 
 
-struct GameMode {
+pub struct GameMode {
     name: &'static str,
     get_driver: fn() -> Box<dyn Driver>,
-    get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder
+    get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder,
+
+    record: bool,
+    replay: Option<String>
 }
 
 impl GameMode {
     fn new(name: &'static str, get_driver: fn() -> Box<dyn Driver>) -> Self {
         Self {
             name, get_driver, 
-            get_renderer: |x| x.start_building()
+            get_renderer: |x| x.start_building(),
+
+            record: cfg!(feature = "debug"),
+            replay: None
         }
     }
 
@@ -44,9 +51,39 @@ impl GameMode {
         self
     }
 
-    async fn construct_gamestate<'a>(&self, factory: &mut GameStateManager<'a>) -> Box<dyn GameState<'a> + 'a> {
+    fn with_record(mut self, record: bool) -> Self {
+        self.record = record;
+        self
+    }
+
+    fn with_replay(mut self, replay: String) -> Self {
+        self.replay = Some(replay);
+        self
+    }
+
+    async fn construct_gamestate_replay<'a>(&self, factory: &mut GameStateManager<'a>, replay: String) -> Box<dyn GameState<'a> + 'a> {
         TetrisState::new(
-            (self.get_driver)(),
+            Box::new(ReplayingDriver::new((self.get_driver)(), &replay)),
+            (self.get_renderer)(factory.get_render_manager_factory()).build().await
+        ).boxed()
+    }
+
+    async fn construct_gamestate<'a>(&self, factory: &mut GameStateManager<'a>) -> Box<dyn GameState<'a> + 'a> {
+        let mut driver = (self.get_driver)();
+
+        /*
+         * If the debug option is included in compilation, any game will be recorded in case
+         * of a crash or unexpected, incorrect behavior
+         */
+        if cfg!(feature = "debug") {
+            if !self.name.contains("_") {
+                let replay_filename = debugging::recording_manager::get_recording_filename_for_gamemode(self.name);
+                driver = Box::new(RecordingDriver::new(driver, replay_filename));
+            }
+        }
+
+        TetrisState::new(
+            driver,
             (self.get_renderer)(factory.get_render_manager_factory()).build().await
         ).boxed()
     }
@@ -79,7 +116,14 @@ async fn main() {
                     })
                 })
                 .collect::<Vec<_>>();
-    
+
+    if cfg!(feature = "debug") {
+        menu_options.push(
+            MenuOption::new("replay".to_string(), move |_| {
+                Box::pin(debugging::replay_menu::get_replay_menu(gamemodes_ref))
+            }));    
+    }
+
     menu_options.push(
         MenuOption::new("options".to_string(), |_| 
             Box::pin(MenuState::new(vec![]).map(|x| x.boxed()))));

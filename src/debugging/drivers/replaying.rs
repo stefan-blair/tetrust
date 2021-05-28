@@ -12,7 +12,7 @@ pub struct ReplayingDriver<'a> {
 }
 
 impl<'a> ReplayingDriver<'a> {
-    pub fn new(wrapped: Box<dyn Driver + 'a>, source_file: &'static str) -> Self {
+    pub fn new(wrapped: Box<dyn Driver + 'a>, source_file: &str) -> Self {
         let mut file = File::open(source_file).unwrap();
         let mut contents = vec![b'['];
         file.read_to_end(&mut contents).unwrap();
