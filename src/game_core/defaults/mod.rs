@@ -28,7 +28,11 @@ pub mod gravity {
         0.00706 * 60.0
     ];
 
-    pub fn calculate_gravity(level: usize) -> f32 {
-        GRAVITY_RATES_IN_SECONDS[std::cmp::min(level, GRAVITY_RATES_IN_SECONDS.len())]
+    pub fn calculate_gravity(level: usize, fastfalling: bool) -> f32 {
+        if level < 10 && fastfalling {
+            GRAVITY_RATES_IN_SECONDS[10]
+        } else {
+            GRAVITY_RATES_IN_SECONDS[std::cmp::min(level, GRAVITY_RATES_IN_SECONDS.len())]
+        }
     }
 }

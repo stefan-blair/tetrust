@@ -69,6 +69,14 @@ pub trait Driver {
         self.get_driver_core_mut().hold()
     }
 
+    fn start_fastfalling(&mut self) {
+        self.get_driver_core_mut().fastfalling = true;
+    }
+
+    fn stop_fastfalling(&mut self) {
+        self.get_driver_core_mut().fastfalling = false;
+    }
+
     fn fall(&mut self) -> BoardTransition {
         self.get_driver_core_mut().fall().1
     }
@@ -88,7 +96,7 @@ pub struct DriverCore {
     core: GameCore,
 
     frames_since_drop: f32,
-    get_gravity: fn(usize) -> f32,
+    get_gravity: fn(usize, bool) -> f32,
 
     level: usize,
     score: usize,
@@ -96,6 +104,7 @@ pub struct DriverCore {
     lock_delay: usize,
     frames_since_lock_delay: usize,
     lock_delayed: bool,
+    fastfalling: bool,
 
     can_hold: bool
 }
@@ -113,7 +122,7 @@ impl DriverCore {
             }            
         } else {
             self.frames_since_drop += 1.0;
-            let gravity = (self.get_gravity)(self.level);
+            let gravity = (self.get_gravity)(self.level, self.fastfalling);
             while self.frames_since_drop > gravity {
                 self.frames_since_drop = 0.0;
                 if !self.core.try_fall() {
@@ -272,7 +281,7 @@ pub struct DriverBuilder<T: BuildableDriver> {
     height: usize,
     queue_length: usize,
     lock_delay: usize,
-    get_gravity: fn(usize) -> f32,
+    get_gravity: fn(usize, bool) -> f32,
     rng_seed: Vec<u8>,
     tetrimino_generator: Option<Box<dyn TetriminoGenerator>>,
 
@@ -329,6 +338,7 @@ impl<T: BuildableDriver> DriverBuilder<T> {
             lock_delay: self.lock_delay,
             frames_since_lock_delay: 0,
             lock_delayed: false,
+            fastfalling: false,
 
             can_hold: true,
         }
@@ -368,7 +378,7 @@ impl<T: BuildableDriver> DriverBuilder<T> {
         self
     }
 
-    pub fn _with_get_gravity(mut self, get_gravity: fn(usize) -> f32) -> Self {
+    pub fn _with_get_gravity(mut self, get_gravity: fn(usize, bool) -> f32) -> Self {
         self.get_gravity = get_gravity;
         self
     }

@@ -20,10 +20,13 @@ make the cell values u64s, and allow any type to be stored in them that can be c
 
 Implement scoring for everything
 
+
 When holding down the fall button, some double falls occur due to gravity.  have the fall button reset 
     its counter whenever an actual gravity fall happens, 
     or when the button is held down, disable gravity unless gravity is greater falling rate
     or when the button is held down, have the gravity function return double gravity rate or something
+
+
 
 When fall or fastfall is pressed during a lock step, right as the piece is being placed, it leads to the fastfall being 
     applied to the next piece (so it falls right away)

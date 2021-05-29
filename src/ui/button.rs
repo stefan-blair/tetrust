@@ -11,7 +11,8 @@ pub struct ButtonHandler<T, R> {
     hold_delay: usize,
     hold_rate: usize,
 
-    action: fn(&mut T) -> R
+    action: fn(&mut T) -> R,
+    release_action: Option<fn(&mut T) -> R>
 }
 
 impl<T, R> ButtonHandler<T, R> {
@@ -25,7 +26,9 @@ impl<T, R> ButtonHandler<T, R> {
             is_held: false,
             held_frames: 0,
             hold_delay: 0,
-            hold_rate: 0
+            hold_rate: 0,
+
+            release_action: None
         }
     }
 
@@ -39,8 +42,15 @@ impl<T, R> ButtonHandler<T, R> {
             is_held: false,
             held_frames: 0,
             hold_delay,
-            hold_rate
+            hold_rate,
+
+            release_action: None
         }
+    }
+
+    pub fn with_release_action(mut self, release_action: fn(&mut T) -> R) -> Self {
+        self.release_action = Some(release_action);
+        self
     }
 
     pub fn reset_hold(&mut self) {
@@ -64,8 +74,14 @@ impl<T, R> ButtonHandler<T, R> {
                 return Some((self.action)(receiver));
             }
         } else {
+            let was_held = self.is_held;
             self.is_held = false;
             self.hold_reset_required = false;
+            if was_held {
+                if let Some(release_action) = self.release_action {
+                    return Some((release_action)(receiver));
+                }
+            }
         }
 
         None
