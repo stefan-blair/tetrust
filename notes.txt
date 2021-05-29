@@ -12,8 +12,6 @@ Make real graphics:
 
 The sticky tetris seems to have a bug / glitch now
 
-
-The ghost pieces are lagging sometimes (like when against a wall)
 Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
 
 Whenever a bug is fixed, keep that record, and then replay it (not graphically but simulated internally) to ensure no regressions

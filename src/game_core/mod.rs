@@ -181,6 +181,7 @@ impl GameCore {
                 if self.board.do_points_fit(translated) {
                     self.active_tetrimino.translate(wall_kick);
                     self.active_tetrimino.rotate(direction);
+                    self.active_tetrimino_updated();
 
                     return true;
                 }
