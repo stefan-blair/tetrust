@@ -22,17 +22,15 @@ use sticky_driver::StickyDriver;
 use fusion_driver::FusionDriver;
 use debugging::drivers::recording::RecordingDriver;
 use debugging::drivers::replaying::ReplayingDriver;
+use debugging::recording_manager::for_recording_if_enabled;
 
 use ui::rendering::*;
 
 
 pub struct GameMode {
-    name: &'static str,
-    get_driver: fn() -> Box<dyn Driver>,
-    get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder,
-
-    record: bool,
-    replay: Option<String>
+    pub name: &'static str,
+    pub get_driver: fn() -> Box<dyn Driver>,
+    pub get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder,
 }
 
 impl GameMode {
@@ -40,32 +38,12 @@ impl GameMode {
         Self {
             name, get_driver, 
             get_renderer: |x| x.start_building(),
-
-            record: cfg!(feature = "debug"),
-            replay: None
         }
     }
 
     fn with_get_renderer(mut self, get_renderer: fn(&mut RenderManagerFactory) -> RenderManagerBuilder) -> Self {
         self.get_renderer = get_renderer;
         self
-    }
-
-    fn with_record(mut self, record: bool) -> Self {
-        self.record = record;
-        self
-    }
-
-    fn with_replay(mut self, replay: String) -> Self {
-        self.replay = Some(replay);
-        self
-    }
-
-    async fn construct_gamestate_replay<'a>(&self, factory: &mut GameStateManager<'a>, replay: String) -> Box<dyn GameState<'a> + 'a> {
-        TetrisState::new(
-            Box::new(ReplayingDriver::new((self.get_driver)(), &replay)),
-            (self.get_renderer)(factory.get_render_manager_factory()).build().await
-        ).boxed()
     }
 
     async fn construct_gamestate<'a>(&self, factory: &mut GameStateManager<'a>) -> Box<dyn GameState<'a> + 'a> {
@@ -92,13 +70,13 @@ impl GameMode {
 #[macroquad::main("TetRust")]
 async fn main() {
     let gamemodes = vec![
-        GameMode::new("classic", || DriverBuilder::<ClassicDriver>::new().build_boxed())
+        GameMode::new("classic", || DriverBuilder::<ClassicDriver>::new().configured(for_recording_if_enabled).build_boxed())
             .with_get_renderer(|f| f.start_building()
                 .with_tilemap("res/basic_tilemap.png", "res/basic_tilemap_info.json")),
-        GameMode::new("cascade", || DriverBuilder::<CascadeDriver>::new().build_boxed())
+        GameMode::new("cascade", || DriverBuilder::<CascadeDriver>::new().configured(for_recording_if_enabled).build_boxed())
             .with_get_renderer(|f| f.start_building()),
-        GameMode::new("sticky", || DriverBuilder::<StickyDriver>::new().build_boxed()),
-        GameMode::new("fusion", || DriverBuilder::<FusionDriver>::new().build_boxed())
+        GameMode::new("sticky", || DriverBuilder::<StickyDriver>::new().configured(for_recording_if_enabled).build_boxed()),
+        GameMode::new("fusion", || DriverBuilder::<FusionDriver>::new().configured(for_recording_if_enabled).build_boxed())
     ];
 
     let gamemode_names = gamemodes.iter().map(|gamemode| gamemode.name).collect::<Vec<_>>();

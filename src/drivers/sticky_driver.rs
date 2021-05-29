@@ -1,5 +1,4 @@
-use rand::thread_rng;
-use rand::Rng;
+use rand::RngCore;
 
 use crate::drivers::*;
 use crate::game_core::utils::point::Point;
@@ -25,10 +24,11 @@ impl TetriminoGenerator for StickyGenerator {
         let (index, tetrimino_type) = self.tetrimino_chooser.choose_tetrimino_type();
         let mut values = vec![index as u32; 4];
 
-        let make_multicolored = thread_rng().gen::<usize>() % 2;
+        let seeded_rng = self.tetrimino_chooser.get_seeded_rng();
+        let make_multicolored = seeded_rng.next_u64() % 2;
         if make_multicolored == 0 {
-            let idx_1 = thread_rng().gen::<usize>() % values.len();
-            let idx_2 = thread_rng().gen::<usize>() % values.len();
+            let idx_1 = seeded_rng.next_u64() as usize % values.len();
+            let idx_2 = seeded_rng.next_u64() as usize % values.len();
 
             let new_value = (index as u32 + 1) % values.len() as u32;
             values[idx_1] = new_value;

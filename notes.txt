@@ -10,14 +10,11 @@ Make real graphics:
                 +-- tile_all.png   (if all of the tiles are the same)
 
 
-instead of passing around futures, could just pass around builders
+The sticky tetris seems to have a bug / glitch now
 
-Make an option that records the game for replay (record and replay driver)
 
 The ghost pieces are lagging sometimes (like when against a wall)
 Make a menu item that is for viewing tetriminos (with an index number inside each tile), etc
-
-The sticky tetris seems to have a bug / glitch now
 
 Whenever a bug is fixed, keep that record, and then replay it (not graphically but simulated internally) to ensure no regressions
 
@@ -37,7 +34,6 @@ When fall or fastfall is pressed during a lock step, right as the piece is being
 
 Make fusion have full cascade rules, so the pieces each have their own values
 Make cascade tetris check for overflowing values and then auto recalculate all active values back from 0
-
 
 The lock delay needs to be reset whenever the current active tetrimino is switched
     -- this seems to be fixed

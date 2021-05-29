@@ -27,7 +27,7 @@ impl GameCore {
         board: board::Board,
         queue_length: usize,
         mut tetrimino_generator: Box<dyn TetriminoGenerator>
-    ) -> Self {    
+    ) -> Self {
         let active_tetrimino = tetrimino_generator
             .next()
             .as_active_instance(board.get_spawn_point());

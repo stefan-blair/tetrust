@@ -42,7 +42,7 @@ impl BoardTransition {
     /**
      * Used to construct the transition using the builder pattern
      */
-    pub fn with_points_deleted(mut self, points_deleted: Vec<Point>) -> Self {
+    pub fn _with_points_deleted(mut self, points_deleted: Vec<Point>) -> Self {
         self.points_deleted = points_deleted;
         self
     }
@@ -52,7 +52,7 @@ impl BoardTransition {
         self
     }
 
-    pub fn with_points_falling(mut self, points_falling: Vec<(Point, i32)>) -> Self {
+    pub fn _with_points_falling(mut self, points_falling: Vec<(Point, i32)>) -> Self {
         self.points_falling = points_falling;
         self
     }

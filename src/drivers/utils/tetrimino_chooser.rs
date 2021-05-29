@@ -44,4 +44,8 @@ impl TetriminoChooser {
 
         self.current_bucket.pop().unwrap()
     }
+
+    pub fn get_seeded_rng(&mut self) -> &mut StdRng {
+        &mut self.seeded_rng
+    }
 }

@@ -1,5 +1,8 @@
 use std::fs;
 
+use crate::drivers::*;
+
+
 /**
  * The general format of a recording is
  * {{ gamemode name }}_{{ index of the recording local to the gamemode }}_{{ index of the record relative to all other recordings}}
@@ -66,4 +69,12 @@ pub fn get_sorted_recordings() -> Vec<RecordingName> {
     recordings.sort_by_key(|entry| std::cmp::Reverse((entry.total_recording_index, entry.gamemode_name.clone(), entry.gamemode_index)));
 
     return recordings;
+}
+
+pub fn for_recording_if_enabled<T: BuildableDriver>(driver_builder: DriverBuilder<T>) -> DriverBuilder<T> {
+    if cfg!(feature = "debug") {
+        driver_builder.with_rng_seed(Vec::new())
+    } else {
+        driver_builder
+    }
 }

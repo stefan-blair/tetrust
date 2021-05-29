@@ -334,8 +334,17 @@ impl<T: BuildableDriver> DriverBuilder<T> {
         }
     }
 
+    pub fn configured(self, configurer: fn(DriverBuilder<T>) -> Self) -> Self {
+        configurer(self)        
+    }
+
     pub fn with_tetrimino_generator(mut self, tetrimino_generator: Box<dyn TetriminoGenerator>) -> Self {
         self.tetrimino_generator = Some(tetrimino_generator);
+        self
+    }
+
+    pub fn with_rng_seed(mut self, rng_seed: Vec<u8>) -> Self {
+        self.rng_seed = rng_seed;
         self
     }
 
