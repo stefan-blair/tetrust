@@ -8,13 +8,14 @@ use crate::drivers::BoardTransition;
 use crate::ui::assets::tilemap::TileMap;
 use crate::game_core::utils::point::*;
 use crate::ui::game_widgets::widget::WidgetState;
+use crate::ui::utils::board_transition_progress::BoardTransitionsProgress;
 
 
 pub struct Renderer<'a> {
     game_core: &'a GameCore,
     active_tetrimino_points: Vec<Point>,
     transition: &'a BoardTransition,
-    transition_completion: f32,
+    transition_progress: BoardTransitionsProgress,
 
     deleted_rows: i32,
     last_y: i32,
@@ -23,12 +24,12 @@ pub struct Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> {
-    fn new(game_core: &'a GameCore, transition: &'a BoardTransition, transition_completion: f32, tile_map: Option<&'a TileMap>) -> Self {
+    fn new(game_core: &'a GameCore, transition: &'a BoardTransition, transition_progress: BoardTransitionsProgress, tile_map: Option<&'a TileMap>) -> Self {
         Self {
             game_core,
             active_tetrimino_points: game_core.get_active_tetrimino().get_points(),
             transition,
-            transition_completion,
+            transition_progress,
 
             deleted_rows: 0,
             last_y: 0,
@@ -78,14 +79,14 @@ impl<'a> Renderer<'a> {
                     .iter()
                     .find(|&&y| y == point.y())
                     .is_some()) {
-                alpha = 1.0 - self.transition_completion;
+                alpha = 1.0 - self.transition_progress.rows_deleted_progress();
             } else if self.transition
                 .get_points_deleted()
                 .map_or(false, |points| points
                     .iter()
                     .find(|&&p| p == point)
                     .is_some()) {
-                alpha = 1.0 - self.transition_completion;
+                alpha = 1.0 - self.transition_progress.points_deleted_progress();
             }
         // check if the current active tetrimino is currently taking up the tile
         } else if let Some((i, _)) = self.active_tetrimino_points
@@ -123,17 +124,19 @@ impl<'a> Renderer<'a> {
         }
 
         if let Some(value) = active_tile_value {
-            let mut point_fall = self.deleted_rows;
+            let mut point_fall_offset = (self.deleted_rows as f32) * self.transition_progress.rows_deleted_progress();
             if let Some(points) = self.transition.get_points_falling() {
-                point_fall += points
+                let point_fall = points
                     .iter()
                     .find(|(p, _)| *p == point)
                     .map(|(_, f)| *f)
-                    .unwrap_or(0)
+                    .unwrap_or(0);
+                
+                point_fall_offset += (point_fall as f32) * self.transition_progress.points_falling_progress();
             }
 
             // using the number of rows beneath the current row that are disappearing, calculate fall based on the elapsed frames of the animation
-            let point_fall_offset = (cell_size * point_fall) as f32 * self.transition_completion;
+            point_fall_offset *= cell_size as f32;
             let point_fall_offset = Point::unit_y(point_fall_offset as i32);
             let pixel = pixel + point_fall_offset;
             self.render_tile(pixel, cell_size, value, alpha);
@@ -201,11 +204,10 @@ pub struct RenderManager {
 
 impl RenderManager { 
     pub fn get_rendering_state<'a>(&'a mut self, widget_state: WidgetState<'a>) -> Renderer<'a> {
-        let transition_completion = (widget_state.transition_elapsed as f32) / (widget_state.transition_duration as f32);        
         Renderer::new(
             widget_state.driver.get_game_core(), 
             widget_state.transition, 
-            transition_completion,
+            widget_state.transition_progress,
             self.tile_map.as_ref().map(|x| x.as_ref()))
     }
 }

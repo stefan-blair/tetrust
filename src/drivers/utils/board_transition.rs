@@ -133,6 +133,9 @@ impl BoardTransition {
     }
 
     pub fn is_inert(&self) -> bool {
-        self.points_deleted.is_empty() && self.points_falling.is_empty() && self.rows_deleted.is_empty()
+        self.points_deleted.is_empty() && 
+        self.points_falling.is_empty() && 
+        self.points_added.is_empty() &&
+        self.rows_deleted.is_empty()
     }
 }

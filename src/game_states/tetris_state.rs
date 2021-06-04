@@ -14,10 +14,12 @@ use crate::ui::game_widgets::label::Label;
 use crate::ui::game_widgets::widget::*;
 use crate::ui::button::ButtonHandler;
 use crate::ui::rendering::*;
+use crate::ui::utils::board_transition_progress::BoardTransitionsProgress;
 
 
 const HOLD_DELAY: usize = 15;
 const HOLD_RATE: usize = 3;
+const FASTFALL_HOLD: usize = 10;
 
 pub struct TetrisState {
     driver: Box<dyn Driver>,
@@ -31,8 +33,14 @@ pub struct TetrisState {
     */
     reset_button_holds: bool,
 
-    transition_duration: usize,
-    transition_elapsed: usize,
+    /*
+     * Whenever a piece falls naturally, fastfall cannot be pressed for a few 
+     * frames to avoid an accidental double drop.
+     */
+    fastfall_delay: (usize, usize),
+
+    transition_durations: BoardTransitionsProgress,
+    transition_progress: BoardTransitionsProgress,
     transition: BoardTransition,
 }
 
@@ -102,9 +110,11 @@ impl TetrisState {
         }).with_release_action(|state: &mut TetrisState| {
             state.driver.stop_fastfalling();
         });
-        let fastfall = ButtonHandler::pressable(KeyCode::Up, |state: &mut TetrisState| {                 
-            let new_transition = state.driver.fastfall();
-            state.transition = new_transition;
+        let fastfall = ButtonHandler::pressable(KeyCode::Up, |state: &mut TetrisState| {
+            if state.fastfall_delay.0 == 0 {
+                let new_transition = state.driver.fastfall();
+                state.set_transition(new_transition);
+            }
         });
 
         let buttons = vec![
@@ -120,10 +130,17 @@ impl TetrisState {
             buttons,
             reset_button_holds: false,
 
+            fastfall_delay: (0, FASTFALL_HOLD),
+
             transition: BoardTransition::new(),
-            transition_duration: 10,
-            transition_elapsed: 0,
+            transition_durations: BoardTransitionsProgress::new(),
+            transition_progress: BoardTransitionsProgress::new()
         }
+    }
+
+    fn set_transition(&mut self, transition: BoardTransition) {
+        self.transition = transition;
+        self.transition_progress = self.transition_durations.with_board_transition(&self.transition);
     }
 }
 
@@ -138,10 +155,20 @@ impl<'a> GameState<'a> for TetrisState {
                 gamestate_manager.get_gamestate_stack().push(MenuState::new(Vec::new()).await.boxed());
                 return;
             }
-    
+
+            // update the fastfall delay
+            if self.fastfall_delay.0 > 0 {
+                self.fastfall_delay.0 -= 1;
+            }
+
             if self.transition.is_inert() {
-                self.transition = self.driver.next_frame();
-    
+                let new_transition = self.driver.next_frame(); 
+                self.set_transition(new_transition);
+
+                if self.transition.get_points_added().is_some() {
+                    self.fastfall_delay.0 = self.fastfall_delay.1;
+                }
+                
                 let mut buttons = std::mem::replace(&mut self.buttons, Vec::new());
                 for button in buttons.iter_mut() {
                     button.update(self.as_mut());
@@ -155,22 +182,20 @@ impl<'a> GameState<'a> for TetrisState {
                     self.reset_button_holds = false;
                 }
             } else {
-                self.transition_elapsed += 1;
-                if self.transition_elapsed > self.transition_duration {
-                    self.transition_elapsed = 0;
+                self.transition_progress.next_frame();
+                if self.transition_progress.is_complete() {
                     let new_transition = self.driver.finish_transition(std::mem::replace(&mut self.transition, BoardTransition::new()));
-                    self.transition = new_transition;
+                    self.set_transition(new_transition);
                 }
             }
-    
+
             // make sure all arrays are sorted and deduped
             self.transition.compress();
     
             let widget_state = WidgetState {
                 driver: self.driver.as_ref(),
                 transition: &self.transition,
-                transition_duration: self.transition_duration,
-                transition_elapsed: self.transition_elapsed
+                transition_progress: self.transition_progress,
             };
     
             for widget in self.widgets.iter_mut() {

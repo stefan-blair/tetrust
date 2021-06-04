@@ -70,11 +70,11 @@ pub trait Driver {
     }
 
     fn start_fastfalling(&mut self) {
-        self.get_driver_core_mut().fastfalling = true;
+        self.get_driver_core_mut().start_fastfalling();
     }
 
     fn stop_fastfalling(&mut self) {
-        self.get_driver_core_mut().fastfalling = false;
+        self.get_driver_core_mut().stop_fastfalling();
     }
 
     fn fall(&mut self) -> BoardTransition {
@@ -124,10 +124,11 @@ impl DriverCore {
             self.frames_since_drop += 1.0;
             let gravity = (self.get_gravity)(self.level, self.fastfalling);
             while self.frames_since_drop > gravity {
-                self.frames_since_drop = 0.0;
+                self.frames_since_drop -= gravity;
                 if !self.core.try_fall() {
                     self.lock_delayed = true;
                     self.frames_since_lock_delay = 0;
+                    self.frames_since_drop = 0.0;
                     break;
                 }
             }
@@ -150,6 +151,15 @@ impl DriverCore {
 
     fn rotate_counterclockwise(&mut self) -> bool {
         self.core.rotate(Direction::CounterClockwise)
+    }
+
+    fn start_fastfalling(&mut self) {
+        self.frames_since_drop = 0.0;
+        self.fastfalling = true;
+    }
+
+    fn stop_fastfalling(&mut self) {
+        self.fastfalling = false;
     }
 
     fn hold(&mut self) {
